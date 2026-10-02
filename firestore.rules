@@ -1,0 +1,18 @@
+rules_version = '2';
+// Cole no Firebase Console → Firestore Database → Regras → Publicar.
+// Leitura pública (corretores); escrita só para o e-mail admin (mesma lista de src/data/firebaseConfig.js).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function ehAdmin() {
+      return request.auth != null && request.auth.token.email in ['sadraqueseucorretor@gmail.com'];
+    }
+    match /empreendimentos/{slug} {
+      allow read: if true;
+      allow write: if ehAdmin();
+    }
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if ehAdmin();
+    }
+  }
+}
