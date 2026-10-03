@@ -109,3 +109,10 @@
   font-size: 14px; font-weight: 600; white-space: nowrap; transition: background var(--transicao);
 }
 .btn-admin:hover { background: rgba(255, 255, 255, 0.18); }
+
+.logo--reservado { height: 88px; width: 1px; }
+.logo--reservado.logo--compacto { height: 48px; }
+@media (min-width: 768px) {
+  .logo--reservado { height: 120px; }
+  .logo--reservado.logo--compacto { height: 56px; }
+}
