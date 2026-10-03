@@ -17,7 +17,7 @@ export default function RecentesSection({ itens }) {
         {itens.map(({ emp, data, oQue }) => (
           <li key={emp.slug}>
             <Link to={`/empreendimento/${emp.slug}`} className="recente">
-              <SmartImage src={emp.imagem} alt={emp.nome} className="recente__thumb" />
+              <SmartImage src={emp.imagem} alt={emp.nome} className="recente__thumb" largura={300} />
               <div className="recente__info">
                 <strong>{emp.nome}</strong>
                 <span className="recente__oque">{oQue} atualizada</span>

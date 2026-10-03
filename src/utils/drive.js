@@ -56,3 +56,16 @@ export function analisarLinkDrive(entrada) {
   if (!id || !ID_VALIDO.test(id)) return { ...base, valido: false };
   return { ...base, valido: true, id, tipo: 'arquivo', urlPreview: `https://drive.google.com/file/d/${id}/preview` };
 }
+
+/**
+ * Endereço de IMAGEM direta para um link do Drive (fotos dos cards, banner).
+ * O link normal de compartilhamento (/file/d/ID/view) abre a página do Drive, não a
+ * imagem — aqui ele vira o endereço de miniatura do Drive, já redimensionado para `largura`.
+ * Links que não são do Drive voltam como estão.
+ */
+export function urlImagem(entrada, largura = 1600) {
+  if (!entrada) return entrada;
+  const d = analisarLinkDrive(entrada);
+  if (d.ehDrive && d.valido && d.tipo === 'arquivo') return `https://drive.google.com/thumbnail?id=${d.id}&sz=w${largura}`;
+  return entrada;
+}

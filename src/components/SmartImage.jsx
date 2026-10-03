@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { urlImagem } from '../utils/drive.js';
 
 // Imagem com lazy-load e fallback elegante (gradiente da marca + iniciais) caso a URL falhe.
-export default function SmartImage({ src, alt, className = '', eager = false }) {
+// Aceita link normal de compartilhamento do Google Drive (convertido para imagem direta).
+export default function SmartImage({ src: original, alt, className = '', eager = false, largura = 1200 }) {
+  const src = urlImagem(original, largura);
   const [erro, setErro] = useState(!src);
   const iniciais = alt?.split(' ').slice(0, 2).map((p) => p[0]).join('') || 'AS';
 
@@ -19,6 +22,7 @@ export default function SmartImage({ src, alt, className = '', eager = false }) 
       alt={alt}
       loading={eager ? 'eager' : 'lazy'}
       decoding="async"
+      referrerPolicy="no-referrer"
       onError={() => setErro(true)}
     />
   );

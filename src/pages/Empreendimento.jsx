@@ -68,7 +68,7 @@ export default function Empreendimento() {
   return (
     <>
       <header className="banner">
-        <SmartImage src={emp.banner || emp.imagem} alt={emp.nome} className="banner__img" eager />
+        <SmartImage src={emp.banner || emp.imagem} alt={emp.nome} className="banner__img" eager largura={2000} />
         <div className="banner__overlay" />
         <div className="container banner__topo">
           <button type="button" className="btn-icone" onClick={voltar} aria-label="Voltar">

@@ -6,7 +6,8 @@ import { salvarEmpreendimento, mensagemErro } from '../../services/admin.js';
 import { buscarPorSlug } from '../../utils/empreendimentos.js';
 import { normalizar } from '../../utils/format.js';
 import { analisarUrlMaterial, listarMateriais } from '../../utils/materiais.js';
-import CampoArquivo from './CampoArquivo.jsx';
+import { sanitizarUrl } from '../../utils/urls.js';
+import CampoLinkFoto from './CampoLinkFoto.jsx';
 import MateriaisEditor from './MateriaisEditor.jsx';
 
 const VAZIO = {
@@ -55,6 +56,15 @@ export default function AdminEditor() {
       if (!a.valido) problemas.push(`Material ${i + 1}${m.titulo.trim() ? ` (${m.titulo.trim()})` : ''}: ${a.erro}`);
       return a;
     });
+    // Fotos: só link (https). Vazio é permitido (o site mostra as iniciais).
+    const fotos = {};
+    for (const [chave, rotulo] of [['imagem', 'Foto do card'], ['banner', 'Banner']]) {
+      const texto = (form[chave] || '').trim();
+      if (!texto) { fotos[chave] = ''; continue; }
+      const r = sanitizarUrl(texto);
+      if (r.valida) fotos[chave] = r.url;
+      else problemas.unshift(`${rotulo}: ${r.erro}`);
+    }
     if (problemas.length) return setErro(problemas.join(' '));
 
     const agora = new Date().toISOString();
@@ -93,6 +103,7 @@ export default function AdminEditor() {
       tipologias: (Array.isArray(form.tipologias) ? form.tipologias : String(form.tipologias).split(','))
         .map((t) => t.trim())
         .filter(Boolean),
+      ...fotos,
       materiaisLista,
       ordem: original?.ordem ?? empreendimentos.length,
       atualizadoEm: agora,
@@ -109,7 +120,6 @@ export default function AdminEditor() {
     }
   }
 
-  const pasta = `empreendimentos/${slug || gerarSlug(form.nome) || 'novo'}`;
 
   return (
     <form className="admin-editor" onSubmit={salvar}>
@@ -168,13 +178,11 @@ export default function AdminEditor() {
       <fieldset className="admin-bloco">
         <legend>Fotos</legend>
         <div className="admin-grade">
-          <Campo rotulo="Foto do card" largo>
-            <CampoArquivo valor={form.imagem} onChange={(v) => definir('imagem', v)} pasta={`${pasta}/fotos`} aceitar="image/*" />
-            {form.imagem && <img className="admin-preview" src={form.imagem} alt="" />}
+          <Campo rotulo="Foto do card" dica="Link da foto no Google Drive (Compartilhar → “Qualquer pessoa com o link” → Copiar link)." largo>
+            <CampoLinkFoto valor={form.imagem} onChange={(v) => definir('imagem', v)} />
           </Campo>
-          <Campo rotulo="Banner da página" dica="Opcional. Sem banner, usa a foto do card." largo>
-            <CampoArquivo valor={form.banner} onChange={(v) => definir('banner', v)} pasta={`${pasta}/fotos`} aceitar="image/*" />
-            {form.banner && <img className="admin-preview" src={form.banner} alt="" />}
+          <Campo rotulo="Banner da página" dica="Opcional — link da foto no Google Drive. Sem banner, usa a foto do card." largo>
+            <CampoLinkFoto valor={form.banner} onChange={(v) => definir('banner', v)} />
           </Campo>
         </div>
       </fieldset>

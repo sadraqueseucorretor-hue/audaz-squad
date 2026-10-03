@@ -74,7 +74,7 @@ export default function AdminLista() {
                 <button type="button" aria-label="Mover para cima" disabled={ocupado || i === 0} onClick={() => mover(i, -1)}>▲</button>
                 <button type="button" aria-label="Mover para baixo" disabled={ocupado || i === empreendimentos.length - 1} onClick={() => mover(i, 1)}>▼</button>
               </div>
-              <SmartImage src={emp.imagem} alt={emp.nome} className="admin-item__thumb" />
+              <SmartImage src={emp.imagem} alt={emp.nome} className="admin-item__thumb" largura={300} />
               <div className="admin-item__info">
                 <strong>{emp.nome}</strong>
                 <span>

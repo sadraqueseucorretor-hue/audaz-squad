@@ -1,8 +1,7 @@
-// Operações de escrita do painel admin (Firestore + Storage). As regras do Firebase garantem
+// Operações de escrita do painel admin (Firestore). As regras do Firebase garantem
 // que só o e-mail admin consegue gravar; aqui só montamos as chamadas.
 import { doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase.js';
+import { db } from '../firebase.js';
 
 export const salvarEmpreendimento = (emp) => setDoc(doc(db, 'empreendimentos', emp.slug), emp);
 
@@ -21,22 +20,6 @@ export async function importarExemplos(lista) {
   const lote = writeBatch(db);
   lista.forEach((emp, i) => lote.set(doc(db, 'empreendimentos', emp.slug), { ...emp, ordem: i }));
   await lote.commit();
-}
-
-const nomeSeguro = (nome) => nome.normalize('NFD').replace(/[^\w.-]+/g, '-').toLowerCase();
-
-// Envia um arquivo ao Firebase Storage e devolve a URL pública. onProgresso recebe 0–100.
-export function enviarArquivo(arquivo, pasta, onProgresso = () => {}) {
-  const destino = ref(storage, `${pasta}/${Date.now()}-${nomeSeguro(arquivo.name)}`);
-  const tarefa = uploadBytesResumable(destino, arquivo, { contentType: arquivo.type || undefined });
-  return new Promise((resolve, reject) => {
-    tarefa.on(
-      'state_changed',
-      (s) => onProgresso(Math.round((s.bytesTransferred / s.totalBytes) * 100)),
-      reject,
-      () => getDownloadURL(tarefa.snapshot.ref).then(resolve, reject)
-    );
-  });
 }
 
 // A logo fica gravada direto no Firestore (como data URL reduzida), sem depender do Storage.
@@ -87,20 +70,9 @@ function areaVisivel(img) {
   return { x: minX, y: minY, largura: maxX - minX + 1, altura: maxY - minY + 1 };
 }
 
-export function formatoDoArquivo(arquivo) {
-  const tipo = arquivo.type || '';
-  if (tipo === 'application/pdf') return 'pdf';
-  if (tipo.startsWith('image/')) return 'imagem';
-  if (tipo.startsWith('video/')) return 'video';
-  if (/sheet|excel|csv/.test(tipo) || /\.(xlsx?|csv|ods)$/i.test(arquivo.name)) return 'planilha';
-  return 'link';
-}
-
 export function mensagemErro(erro) {
   const codigo = erro?.code || '';
   if (codigo.includes('permission-denied') || codigo.includes('unauthorized'))
     return 'Sem permissão para salvar. Confira se as regras do Firebase foram publicadas e se você entrou com o e-mail admin.';
-  if (codigo.startsWith('storage/'))
-    return 'Não foi possível enviar o arquivo. O Storage do Firebase precisa estar ativado (plano Blaze). Enquanto isso, cole um link do Google Drive no campo.';
   return erro?.message || 'Algo deu errado. Tente novamente.';
 }
