@@ -96,3 +96,11 @@
 
 .admin-rodape { display: flex; justify-content: flex-end; align-items: center; gap: 10px; flex-wrap: wrap; position: sticky; bottom: 0; background: var(--bg); padding: 12px 0; }
 .admin-rodape .admin-erro, .admin-rodape .admin-ok { flex: 1 1 100%; }
+
+/* Botão "Acesso Admin" no topo da página inicial */
+.btn-admin {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.08); color: #fff;
+  font-size: 14px; font-weight: 600; white-space: nowrap; transition: background var(--transicao);
+}
+.btn-admin:hover { background: rgba(255, 255, 255, 0.18); }

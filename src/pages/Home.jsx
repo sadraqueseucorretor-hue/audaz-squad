@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
 import SearchBar from '../components/SearchBar.jsx';
 import FilterChips from '../components/FilterChips.jsx';
@@ -43,6 +44,9 @@ export default function Home() {
         <div className="container">
           <nav className="hero__nav">
             <Logo />
+            <Link to="/admin" className="btn-admin">
+              <Icon name="key" size={16} /> Acesso Admin
+            </Link>
           </nav>
           <div className="hero__conteudo">
             <p className="hero__eyebrow">{SITE.marca} · {SITE.parceiro}</p>
