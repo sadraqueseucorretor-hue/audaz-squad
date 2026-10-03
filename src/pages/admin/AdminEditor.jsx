@@ -3,17 +3,18 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDados } from '../../context/DadosContext.jsx';
 import { STATUS } from '../../data/config.js';
 import { salvarEmpreendimento, mensagemErro } from '../../services/admin.js';
-import { buscarPorSlug } from '../../utils/empreendimentos.js';
+import { buscarPorSlug, fotosDo } from '../../utils/empreendimentos.js';
 import { normalizar } from '../../utils/format.js';
 import { analisarUrlMaterial, listarMateriais } from '../../utils/materiais.js';
 import { sanitizarUrl } from '../../utils/urls.js';
 import CampoLinkFoto from './CampoLinkFoto.jsx';
+import FotosEditor from './FotosEditor.jsx';
 import MateriaisEditor from './MateriaisEditor.jsx';
 
 const VAZIO = {
   slug: '', nome: '', construtora: 'Direcional', status: 'lancamento', bairro: '', cidade: '', uf: 'CE', endereco: '',
   precoInicial: '', entrega: '', tipologias: [], quartos: '', suites: '', metragem: '', vagas: '', torres: '', unidades: '',
-  imagem: '', banner: '', materiaisLista: [],
+  logo: '', fotos: [''], banner: '', materiaisLista: [],
 };
 
 const gerarSlug = (nome) => normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -33,7 +34,7 @@ export default function AdminEditor() {
     if (form || carregando) return;
     // Materiais no formato antigo (agrupados por tipo) são convertidos para a lista nova aqui;
     // ao salvar, o empreendimento passa a usar só a lista nova.
-    setForm(original ? { ...VAZIO, ...structuredClone(original), materiaisLista: structuredClone(listarMateriais(original)) } : { ...VAZIO });
+    setForm(original ? { ...VAZIO, ...structuredClone(original), materiaisLista: structuredClone(listarMateriais(original)), fotos: fotosDo(original).length ? fotosDo(original) : [''] } : { ...VAZIO });
   }, [form, carregando, original]);
 
   if (!form) return <p>{carregando ? 'Carregando…' : ''}</p>;
@@ -56,15 +57,20 @@ export default function AdminEditor() {
       if (!a.valido) problemas.push(`Material ${i + 1}${m.titulo.trim() ? ` (${m.titulo.trim()})` : ''}: ${a.erro}`);
       return a;
     });
-    // Fotos: só link (https). Vazio é permitido (o site mostra as iniciais).
-    const fotos = {};
-    for (const [chave, rotulo] of [['imagem', 'Foto do card'], ['banner', 'Banner']]) {
-      const texto = (form[chave] || '').trim();
-      if (!texto) { fotos[chave] = ''; continue; }
+    // Fotos e logo: só link (https). Vazio é permitido (o site mostra as iniciais).
+    const validarFoto = (texto, rotulo) => {
+      if (!texto?.trim()) return '';
       const r = sanitizarUrl(texto);
-      if (r.valida) fotos[chave] = r.url;
-      else problemas.unshift(`${rotulo}: ${r.erro}`);
-    }
+      if (!r.valida) problemas.unshift(`${rotulo}: ${r.erro}`);
+      return r.valida ? r.url : '';
+    };
+    const logo = validarFoto(form.logo, 'Logo do empreendimento');
+    const banner = validarFoto(form.banner, 'Banner');
+    const listaFotos = (form.fotos || [])
+      .map((f, i) => validarFoto(f, `Foto ${i + 1} do card`))
+      .filter(Boolean);
+    // `imagem` continua gravada (= 1ª foto) para compatibilidade com quem lia o campo antigo.
+    const fotos = { logo, banner, fotos: listaFotos, imagem: listaFotos[0] || '' };
     if (problemas.length) return setErro(problemas.join(' '));
 
     const agora = new Date().toISOString();
@@ -176,12 +182,21 @@ export default function AdminEditor() {
       </fieldset>
 
       <fieldset className="admin-bloco">
-        <legend>Fotos</legend>
+        <legend>Logo e fotos</legend>
+        <p className="admin-dica admin-dica--bloco">
+          Tudo por link do <strong>Google Drive</strong>: clique na imagem → <strong>Compartilhar</strong> →
+          “Qualquer pessoa com o link” → <strong>Copiar link</strong> e cole aqui.
+        </p>
         <div className="admin-grade">
-          <Campo rotulo="Foto do card" dica="Link da foto no Google Drive (Compartilhar → “Qualquer pessoa com o link” → Copiar link)." largo>
-            <CampoLinkFoto valor={form.imagem} onChange={(v) => definir('imagem', v)} />
+          <Campo rotulo="Logo do empreendimento" dica="Aparece nas miniaturas (Atualizados recentemente e lista do painel). PNG com fundo transparente fica melhor.">
+            <CampoLinkFoto valor={form.logo} onChange={(v) => definir('logo', v)} />
           </Campo>
-          <Campo rotulo="Banner da página" dica="Opcional — link da foto no Google Drive. Sem banner, usa a foto do card." largo>
+          <div className="campo campo--largo">
+            <span>Fotos do card (carrossel)</span>
+            <FotosEditor fotos={form.fotos} onChange={(lista) => definir('fotos', lista)} />
+            <small>A primeira foto é a capa. O corretor arrasta (celular) ou usa as setas (computador) para ver as outras.</small>
+          </div>
+          <Campo rotulo="Banner da página" dica="Opcional — sem banner, usa a primeira foto do card." largo>
             <CampoLinkFoto valor={form.banner} onChange={(v) => definir('banner', v)} />
           </Campo>
         </div>

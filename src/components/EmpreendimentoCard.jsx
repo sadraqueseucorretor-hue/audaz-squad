@@ -1,17 +1,18 @@
 import { Link } from 'react-router-dom';
-import SmartImage from './SmartImage.jsx';
+import Carrossel from './Carrossel.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import Icon from './Icon.jsx';
 import { formatarPreco } from '../utils/format.js';
+import { fotosDo } from '../utils/empreendimentos.js';
 
 export default function EmpreendimentoCard({ emp, prioridade = false }) {
   const url = `/empreendimento/${emp.slug}`;
   return (
     <article className="emp-card">
-      <Link to={url} className="emp-card__media" tabIndex={-1} aria-hidden="true">
-        <SmartImage src={emp.imagem} alt={emp.nome} eager={prioridade} />
+      <div className="emp-card__media">
+        <Carrossel fotos={fotosDo(emp)} alt={emp.nome} href={url} eager={prioridade} />
         <StatusBadge status={emp.status} className="emp-card__status" />
-      </Link>
+      </div>
 
       <div className="emp-card__body">
         <p className="emp-card__construtora">{emp.construtora}</p>

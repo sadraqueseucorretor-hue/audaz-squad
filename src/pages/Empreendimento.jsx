@@ -11,7 +11,7 @@ import Footer from '../components/Footer.jsx';
 import VisualizadorMaterial from '../components/VisualizadorMaterial.jsx';
 import { listarMateriais } from '../utils/materiais.js';
 import { useDados } from '../context/DadosContext.jsx';
-import { buscarPorSlug } from '../utils/empreendimentos.js';
+import { buscarPorSlug, fotosDo } from '../utils/empreendimentos.js';
 import { formatarPreco } from '../utils/format.js';
 
 export default function Empreendimento() {
@@ -68,7 +68,7 @@ export default function Empreendimento() {
   return (
     <>
       <header className="banner">
-        <SmartImage src={emp.banner || emp.imagem} alt={emp.nome} className="banner__img" eager largura={2000} />
+        <SmartImage src={emp.banner || fotosDo(emp)[0]} alt={emp.nome} className="banner__img" eager largura={2000} />
         <div className="banner__overlay" />
         <div className="container banner__topo">
           <button type="button" className="btn-icone" onClick={voltar} aria-label="Voltar">

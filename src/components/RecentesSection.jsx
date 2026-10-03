@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import SmartImage from './SmartImage.jsx';
+import Miniatura from './Miniatura.jsx';
 import Icon from './Icon.jsx';
 import { tempoRelativo, formatarDataHora } from '../utils/format.js';
 
@@ -17,7 +17,7 @@ export default function RecentesSection({ itens }) {
         {itens.map(({ emp, data, oQue }) => (
           <li key={emp.slug}>
             <Link to={`/empreendimento/${emp.slug}`} className="recente">
-              <SmartImage src={emp.imagem} alt={emp.nome} className="recente__thumb" largura={300} />
+              <Miniatura emp={emp} className="recente__thumb" />
               <div className="recente__info">
                 <strong>{emp.nome}</strong>
                 <span className="recente__oque">{oQue} atualizada</span>

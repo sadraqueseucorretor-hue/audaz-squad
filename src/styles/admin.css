@@ -229,3 +229,32 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
 
 /* Campo de foto por link (Master Admin) */
 .campo-link-foto { display: grid; gap: 6px; }
+
+/* Carrossel de fotos do card */
+.emp-card__media > .carrossel__slide, .carrossel { position: absolute; inset: 0; }
+.carrossel__trilho { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.carrossel__trilho::-webkit-scrollbar { display: none; }
+.carrossel__slide { display: block; flex: 0 0 100%; height: 100%; scroll-snap-align: start; }
+.carrossel__slide .smart-img { width: 100%; height: 100%; object-fit: cover; }
+.carrossel__seta {
+  position: absolute; top: 50%; z-index: 2; transform: translateY(-50%); display: grid; place-items: center;
+  width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.92); color: var(--azul);
+  box-shadow: var(--sombra); opacity: 0; transition: opacity var(--transicao);
+}
+.carrossel__seta--esq { left: 10px; }
+.carrossel__seta--dir { right: 10px; }
+.carrossel__seta:focus-visible { opacity: 1; }
+@media (hover: hover) { .emp-card:hover .carrossel__seta { opacity: 1; } }
+.carrossel__pontos { position: absolute; bottom: 10px; left: 0; right: 0; z-index: 2; display: flex; justify-content: center; gap: 6px; pointer-events: none; }
+.carrossel__pontos span { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.55); transition: all var(--transicao); }
+.carrossel__pontos span.ativo { width: 18px; border-radius: 4px; background: #fff; }
+
+/* Miniatura com a logo do empreendimento: inteira, sobre fundo claro */
+.miniatura--logo { object-fit: contain !important; background: #fff; padding: 6px; border: 1px solid var(--borda); }
+
+/* Master Admin — fotos do carrossel */
+.fotos-editor { display: grid; gap: 10px; justify-items: start; }
+.fotos-editor > .foto-linha { justify-self: stretch; }
+.foto-linha { display: grid; gap: 8px; padding: 12px; border-radius: var(--raio-sm); background: var(--gelo); }
+.foto-linha__rotulo { font-size: 14px; color: var(--azul); }
+.material-linha__botoes .perigo { color: var(--vinho); }

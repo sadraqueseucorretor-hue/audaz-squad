@@ -6,7 +6,7 @@ import { empreendimentos as exemplos } from '../../data/empreendimentos.js';
 import { excluirEmpreendimento, importarExemplos, salvarOrdem, mensagemErro } from '../../services/admin.js';
 import { ultimaAtualizacao } from '../../utils/empreendimentos.js';
 import { tempoRelativo } from '../../utils/format.js';
-import SmartImage from '../../components/SmartImage.jsx';
+import Miniatura from '../../components/Miniatura.jsx';
 
 export default function AdminLista() {
   const { empreendimentos, carregando, erro } = useDados();
@@ -74,7 +74,7 @@ export default function AdminLista() {
                 <button type="button" aria-label="Mover para cima" disabled={ocupado || i === 0} onClick={() => mover(i, -1)}>▲</button>
                 <button type="button" aria-label="Mover para baixo" disabled={ocupado || i === empreendimentos.length - 1} onClick={() => mover(i, 1)}>▼</button>
               </div>
-              <SmartImage src={emp.imagem} alt={emp.nome} className="admin-item__thumb" largura={300} />
+              <Miniatura emp={emp} className="admin-item__thumb" />
               <div className="admin-item__info">
                 <strong>{emp.nome}</strong>
                 <span>

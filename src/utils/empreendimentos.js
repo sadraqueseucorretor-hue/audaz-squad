@@ -42,3 +42,10 @@ export function atualizadosRecentemente(lista, limite = 4) {
     .sort((a, b) => new Date(b.data) - new Date(a.data))
     .slice(0, limite);
 }
+
+// Fotos do carrossel do card. Empreendimentos antigos (só `imagem`) viram uma lista de 1 foto.
+export const fotosDo = (emp) =>
+  (Array.isArray(emp?.fotos) && emp.fotos.length ? emp.fotos : [emp?.imagem]).filter(Boolean);
+
+// Miniatura (atualizados recentemente, lista do admin): a logo do empreendimento; sem logo, a 1ª foto.
+export const miniaturaDo = (emp) => (emp?.logo ? { src: emp.logo, ehLogo: true } : { src: fotosDo(emp)[0], ehLogo: false });
