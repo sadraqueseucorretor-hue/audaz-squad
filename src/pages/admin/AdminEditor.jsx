@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDados } from '../../context/DadosContext.jsx';
 import { STATUS } from '../../data/config.js';
-import { TIPOS_MATERIAIS, FORMATOS } from '../../data/tiposMateriais.js';
-import { salvarEmpreendimento, formatoDoArquivo, mensagemErro } from '../../services/admin.js';
+import { salvarEmpreendimento, mensagemErro } from '../../services/admin.js';
 import { buscarPorSlug } from '../../utils/empreendimentos.js';
-import { normalizar, formatarDataHora } from '../../utils/format.js';
+import { normalizar } from '../../utils/format.js';
+import { analisarUrlMaterial, listarMateriais } from '../../utils/materiais.js';
 import CampoArquivo from './CampoArquivo.jsx';
+import MateriaisEditor from './MateriaisEditor.jsx';
 
 const VAZIO = {
   slug: '', nome: '', construtora: 'Direcional', status: 'lancamento', bairro: '', cidade: '', uf: 'CE', endereco: '',
   precoInicial: '', entrega: '', tipologias: [], quartos: '', suites: '', metragem: '', vagas: '', torres: '', unidades: '',
-  imagem: '', banner: '', materiais: {},
+  imagem: '', banner: '', materiaisLista: [],
 };
 
 const gerarSlug = (nome) => normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -29,7 +30,9 @@ export default function AdminEditor() {
   // Inicializa o formulário uma vez, quando os dados chegam do Firestore.
   useEffect(() => {
     if (form || carregando) return;
-    setForm(original ? { ...VAZIO, ...structuredClone(original) } : { ...VAZIO });
+    // Materiais no formato antigo (agrupados por tipo) são convertidos para a lista nova aqui;
+    // ao salvar, o empreendimento passa a usar só a lista nova.
+    setForm(original ? { ...VAZIO, ...structuredClone(original), materiaisLista: structuredClone(listarMateriais(original)) } : { ...VAZIO });
   }, [form, carregando, original]);
 
   if (!form) return <p>{carregando ? 'Carregando…' : ''}</p>;
@@ -38,38 +41,50 @@ export default function AdminEditor() {
   const campo = (chave) => (e) => setForm((f) => ({ ...f, [chave]: e.target.value }));
   const definir = (chave, valor) => setForm((f) => ({ ...f, [chave]: valor }));
 
-  const itensDe = (tipo) => form.materiais?.[tipo] || [];
-  const definirItens = (tipo, itens) => setForm((f) => ({ ...f, materiais: { ...f.materiais, [tipo]: itens } }));
-  const alterarItem = (tipo, i, mudancas) => definirItens(tipo, itensDe(tipo).map((it, j) => (j === i ? { ...it, ...mudancas } : it)));
-  const moverItem = (tipo, i, d) => {
-    const itens = [...itensDe(tipo)];
-    [itens[i], itens[i + d]] = [itens[i + d], itens[i]];
-    definirItens(tipo, itens);
-  };
-
   async function salvar(e) {
     e.preventDefault();
     const slugFinal = slug || gerarSlug(form.slug || form.nome);
     if (!slugFinal) return setErro('Informe o nome do empreendimento.');
     if (!slug && buscarPorSlug(empreendimentos, slugFinal)) return setErro(`Já existe um empreendimento com o endereço "${slugFinal}". Mude o nome ou o endereço da página.`);
 
-    const agora = new Date().toISOString();
-    const antigos = original?.materiais || {};
-    // Material novo ou com link/título alterado ganha a data de agora ("Atualizada em…").
-    const materiais = Object.fromEntries(
-      TIPOS_MATERIAIS.map(({ chave }) => [
-        chave,
-        itensDe(chave)
-          .filter((it) => it.url?.trim())
-          .map((it) => {
-            const anterior = (antigos[chave] || []).find((a) => a.url === it.url && a.titulo === it.titulo);
-            return { titulo: it.titulo?.trim() || 'Arquivo', url: it.url.trim(), formato: it.formato || 'link', atualizadoEm: anterior?.atualizadoEm || agora };
-          }),
-      ]).filter(([, itens]) => itens.length)
-    );
+    // Valida os materiais: nome obrigatório e link seguro (https, sem javascript:/data:/HTML).
+    const problemas = [];
+    const analises = form.materiaisLista.map((m, i) => {
+      const a = analisarUrlMaterial(m.urlOriginal);
+      if (!m.titulo.trim()) problemas.push(`Material ${i + 1}: informe o nome.`);
+      if (!a.valido) problemas.push(`Material ${i + 1}${m.titulo.trim() ? ` (${m.titulo.trim()})` : ''}: ${a.erro}`);
+      return a;
+    });
+    if (problemas.length) return setErro(problemas.join(' '));
 
+    const agora = new Date().toISOString();
+    const anteriores = new Map((original ? listarMateriais(original) : []).map((m) => [m.id, m]));
+    // Só metadados + URL são gravados — o arquivo continua no Google Drive/origem.
+    const materiaisLista = form.materiaisLista.map((m, ordem) => {
+      const a = analises[ordem];
+      const antes = anteriores.get(m.id);
+      const mudou =
+        !antes || antes.titulo !== m.titulo.trim() || antes.categoria !== m.categoria ||
+        antes.urlOriginal !== a.urlOriginal || (antes.ativo !== false) !== (m.ativo !== false);
+      return {
+        id: m.id,
+        empreendimentoId: slugFinal,
+        titulo: m.titulo.trim(),
+        categoria: m.categoria,
+        urlOriginal: a.urlOriginal,
+        urlPreview: a.urlPreview,
+        tipoOrigem: a.tipoOrigem,
+        ordem,
+        ativo: m.ativo !== false,
+        createdAt: antes?.createdAt || agora,
+        updatedAt: mudou ? agora : antes.updatedAt || agora,
+      };
+    });
+
+    // `materiais` (formato antigo) sai do documento: a partir daqui vale só `materiaisLista`.
+    const { materiais: _formatoAntigo, ...dados } = form;
     const emp = {
-      ...form,
+      ...dados,
       slug: slugFinal,
       nome: form.nome.trim(),
       precoInicial: numeroOuNada(form.precoInicial),
@@ -78,7 +93,7 @@ export default function AdminEditor() {
       tipologias: (Array.isArray(form.tipologias) ? form.tipologias : String(form.tipologias).split(','))
         .map((t) => t.trim())
         .filter(Boolean),
-      materiais,
+      materiaisLista,
       ordem: original?.ordem ?? empreendimentos.length,
       atualizadoEm: agora,
     };
@@ -165,44 +180,16 @@ export default function AdminEditor() {
       </fieldset>
 
       <fieldset className="admin-bloco">
-        <legend>Materiais comerciais</legend>
-        <p className="admin-dica">Envie o arquivo (PDF, imagem, planilha) ou cole um link. Itens sem link não são publicados.</p>
-        {TIPOS_MATERIAIS.map((tipo) => (
-          <div key={tipo.chave} className="admin-material">
-            <div className="admin-material__head">
-              <strong>{tipo.label}</strong>
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={() => definirItens(tipo.chave, [...itensDe(tipo.chave), { titulo: tipo.label, url: '', formato: 'pdf' }])}
-              >
-                + Adicionar
-              </button>
-            </div>
-            {itensDe(tipo.chave).map((it, i, itens) => (
-              <div key={i} className="admin-material__item">
-                <div className="admin-material__linha">
-                  <input value={it.titulo} onChange={(e) => alterarItem(tipo.chave, i, { titulo: e.target.value })} placeholder="Título (ex.: Tabela Outubro/2026)" />
-                  <select value={it.formato || 'link'} onChange={(e) => alterarItem(tipo.chave, i, { formato: e.target.value })}>
-                    {Object.entries(FORMATOS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                  <div className="admin-material__botoes">
-                    <button type="button" aria-label="Subir" disabled={i === 0} onClick={() => moverItem(tipo.chave, i, -1)}>▲</button>
-                    <button type="button" aria-label="Descer" disabled={i === itens.length - 1} onClick={() => moverItem(tipo.chave, i, 1)}>▼</button>
-                    <button type="button" aria-label="Remover" className="perigo" onClick={() => definirItens(tipo.chave, itens.filter((_, j) => j !== i))}>✕</button>
-                  </div>
-                </div>
-                <CampoArquivo
-                  valor={it.url}
-                  onChange={(url) => alterarItem(tipo.chave, i, { url })}
-                  onArquivo={(arq) => alterarItem(tipo.chave, i, { formato: formatoDoArquivo(arq) })}
-                  pasta={`${pasta}/${tipo.chave}`}
-                />
-                {it.atualizadoEm && <p className="admin-dica">Atualizado em {formatarDataHora(it.atualizadoEm)}</p>}
-              </div>
-            ))}
-          </div>
-        ))}
+        <legend>Materiais do empreendimento</legend>
+        <p className="admin-dica admin-dica--bloco">
+          Os arquivos ficam no <strong>Google Drive</strong> (ou outro serviço) — aqui você cadastra só o link.
+          No Drive: clique no arquivo → <strong>Compartilhar</strong> → acesso “Qualquer pessoa com o link” → <strong>Copiar link</strong>.
+        </p>
+        <MateriaisEditor
+          materiais={form.materiaisLista}
+          onChange={(lista) => definir('materiaisLista', lista)}
+          contexto={form.nome}
+        />
       </fieldset>
 
       <div className="admin-rodape">

@@ -1,41 +1,41 @@
-import { Link } from 'react-router-dom';
 import Icon from './Icon.jsx';
-import { FORMATOS } from '../data/tiposMateriais.js';
 import { formatarDataHora, ehRecente } from '../utils/format.js';
+import { seloDoMaterial } from '../utils/materiais.js';
 
-// Um card por TIPO de material (Book, Tabela...). Cada arquivo do tipo vira um botão.
-export default function MaterialCard({ tipo, slug }) {
-  const ehTabela = tipo.chave === 'tabela';
-  const unico = tipo.itens.length === 1;
+// Um card por CATEGORIA (Book, Tabela...). Cada material abre no visualizador do próprio site.
+export default function MaterialCard({ categoria, onAbrir }) {
+  const ehTabela = categoria.chave === 'tabela';
+  const unico = categoria.itens.length === 1;
 
   return (
     <article className={`material ${ehTabela ? 'material--tabela' : ''}`}>
       <header className="material__head">
         <span className="material__icone">
-          <Icon name={tipo.icone} size={22} />
+          <Icon name={categoria.icone} size={22} />
         </span>
         <div>
-          <h3>{tipo.label}</h3>
-          <p>{tipo.descricao}</p>
+          <h3>{categoria.label}</h3>
+          <p>{categoria.descricao}</p>
         </div>
       </header>
 
       <ul className="material__lista">
-        {tipo.itens.map((item) => (
-          <li key={`${item.url}-${item.indice}`}>
-            <Link
+        {categoria.itens.map((item) => (
+          <li key={item.id}>
+            <button
+              type="button"
               className={`material__link ${unico ? 'material__link--unico' : ''}`}
-              to={`/empreendimento/${slug}/ver/${tipo.chave}/${item.indice}`}
+              onClick={() => onAbrir(item)}
             >
               <span className="material__titulo">{item.titulo}</span>
               <span className="material__acoes">
-                {item.formato && <span className="formato">{FORMATOS[item.formato] || item.formato}</span>}
+                <span className="formato">{seloDoMaterial(item)}</span>
                 <Icon name="eye" size={17} />
               </span>
-            </Link>
-            {item.atualizadoEm && (
-              <p className={`material__data ${ehRecente(item.atualizadoEm) ? 'material__data--nova' : ''}`}>
-                <Icon name="clock" size={14} /> Atualizada em {formatarDataHora(item.atualizadoEm)}
+            </button>
+            {item.updatedAt && (
+              <p className={`material__data ${ehRecente(item.updatedAt) ? 'material__data--nova' : ''}`}>
+                <Icon name="clock" size={14} /> Atualizada em {formatarDataHora(item.updatedAt)}
               </p>
             )}
           </li>

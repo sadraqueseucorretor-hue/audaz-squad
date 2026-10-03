@@ -1,6 +1,7 @@
 // Regras de negócio sobre os dados: busca, filtros, materiais visíveis e "atualizados recentemente".
 // Funções puras: recebem a lista (vinda do Firestore ou dos dados de exemplo) por parâmetro.
-import { TIPOS_MATERIAIS } from '../data/tiposMateriais.js';
+import { categoriaPorChave } from '../data/tiposMateriais.js';
+import { listarMateriais } from './materiais.js';
 import { normalizar } from './format.js';
 
 // Ordem definida pelo admin (campo `ordem`); sem ordem, vai para o fim em ordem alfabética.
@@ -22,24 +23,13 @@ export function filtrarEmpreendimentos(lista, { busca = '', status = '', cidade 
   });
 }
 
-// Retorna só os tipos de material que têm pelo menos um arquivo, na ordem do catálogo.
-export function materiaisVisiveis(emp) {
-  const materiais = emp?.materiais || {};
-  return TIPOS_MATERIAIS.map((tipo) => ({
-    ...tipo,
-    // `indice` é a posição original na lista, usada no link do visualizador.
-    itens: (materiais[tipo.chave] || []).map((item, indice) => ({ ...item, indice })).filter((item) => item && item.url),
-  })).filter((tipo) => tipo.itens.length > 0);
-}
-
-// Descobre a atualização mais recente (geral ou de algum material) e o que foi atualizado.
+// Descobre a atualização mais recente (dados gerais ou algum material ativo) e o que foi atualizado.
 export function ultimaAtualizacao(emp) {
   let melhor = { data: emp.atualizadoEm || null, oQue: 'Informações' };
-  for (const tipo of materiaisVisiveis(emp)) {
-    for (const item of tipo.itens) {
-      if (item.atualizadoEm && (!melhor.data || new Date(item.atualizadoEm) >= new Date(melhor.data))) {
-        melhor = { data: item.atualizadoEm, oQue: tipo.label };
-      }
+  for (const m of listarMateriais(emp)) {
+    if (m.ativo === false || !m.updatedAt) continue;
+    if (!melhor.data || new Date(m.updatedAt) >= new Date(melhor.data)) {
+      melhor = { data: m.updatedAt, oQue: categoriaPorChave(m.categoria).label };
     }
   }
   return melhor;

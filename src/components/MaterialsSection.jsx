@@ -1,18 +1,18 @@
 import MaterialCard from './MaterialCard.jsx';
-import { materiaisVisiveis } from '../utils/empreendimentos.js';
+import { materiaisPorCategoria } from '../utils/materiais.js';
 
-export default function MaterialsSection({ emp }) {
-  const tipos = materiaisVisiveis(emp);
+export default function MaterialsSection({ emp, onAbrir }) {
+  const categorias = materiaisPorCategoria(emp);
   return (
     <section className="secao" id="materiais" aria-labelledby="materiais-titulo">
       <div className="secao__head">
-        <h2 id="materiais-titulo" className="secao__titulo">Materiais Comerciais</h2>
-        <span className="secao__contador">{tipos.length} {tipos.length === 1 ? 'categoria' : 'categorias'}</span>
+        <h2 id="materiais-titulo" className="secao__titulo">Materiais</h2>
+        <span className="secao__contador">{categorias.length} {categorias.length === 1 ? 'categoria' : 'categorias'}</span>
       </div>
-      {tipos.length ? (
+      {categorias.length ? (
         <div className="materiais">
-          {tipos.map((tipo) => (
-            <MaterialCard key={tipo.chave} tipo={tipo} slug={emp.slug} />
+          {categorias.map((categoria) => (
+            <MaterialCard key={categoria.chave} categoria={categoria} onAbrir={onAbrir} />
           ))}
         </div>
       ) : (

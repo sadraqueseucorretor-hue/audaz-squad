@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect } from 'react';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import Icon from '../components/Icon.jsx';
 import SmartImage from '../components/SmartImage.jsx';
@@ -8,6 +8,8 @@ import InfoGrid from '../components/InfoGrid.jsx';
 import MaterialsSection from '../components/MaterialsSection.jsx';
 import ShareButton from '../components/ShareButton.jsx';
 import Footer from '../components/Footer.jsx';
+import VisualizadorMaterial from '../components/VisualizadorMaterial.jsx';
+import { listarMateriais } from '../utils/materiais.js';
 import { useDados } from '../context/DadosContext.jsx';
 import { buscarPorSlug } from '../utils/empreendimentos.js';
 import { formatarPreco } from '../utils/format.js';
@@ -17,8 +19,20 @@ export default function Empreendimento() {
   const navigate = useNavigate();
   const { empreendimentos, site: SITE, carregando } = useDados();
   const emp = buscarPorSlug(empreendimentos, slug);
+  // O material aberto fica na URL (?material=id): o link pode ser compartilhado e o
+  // botão "voltar" do celular fecha o visualizador em vez de sair da página.
+  const [params, setParams] = useSearchParams();
+  const materialAberto = emp && params.get('material')
+    ? listarMateriais(emp).find((m) => m.id === params.get('material') && m.ativo !== false)
+    : null;
+  const abrirMaterial = (m) => setParams({ material: m.id });
+  const fecharMaterial = useCallback(
+    () => (window.history.state?.idx > 0 && params.get('material') ? navigate(-1) : setParams({}, { replace: true })),
+    [navigate, params, setParams]
+  );
 
   useEffect(() => {
+    if (params.get('material')) return;
     window.scrollTo(0, 0);
     document.title = emp ? `${emp.nome} · ${SITE.marca}` : SITE.titulo;
   }, [emp, SITE]);
@@ -98,10 +112,14 @@ export default function Empreendimento() {
           <InfoGrid itens={info} />
         </section>
 
-        <MaterialsSection emp={emp} />
+        <MaterialsSection emp={emp} onAbrir={abrirMaterial} />
       </main>
 
       <Footer />
+
+      {materialAberto && (
+        <VisualizadorMaterial key={materialAberto.id} material={materialAberto} contexto={emp.nome} onFechar={fecharMaterial} />
+      )}
     </>
   );
 }

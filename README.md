@@ -9,8 +9,8 @@ React 18 + Vite + React Router + Firebase (Auth, Firestore e Storage).
 1. Preencha `src/data/firebaseConfig.js` com as credenciais do app Web do projeto Firebase.
 2. Ative **Authentication → E-mail/senha** e crie o usuário admin.
 3. Crie o **Firestore** e publique as regras de `firestore.rules`.
-4. (Opcional, plano Blaze) Ative o **Storage** e publique `storage.rules` para enviar arquivos pelo painel.
-   Sem Storage, cole links (Google Drive, YouTube…) nos campos de material.
+4. (Opcional, plano Blaze) Ative o **Storage** e publique `storage.rules` para enviar **fotos** pelo painel.
+   Os materiais (books, tabelas, plantas…) não usam o Storage: são cadastrados por link (Google Drive etc.).
 
 Sem credenciais, o site mostra os dados de exemplo de `src/data/empreendimentos.js`.
 No painel, com o banco vazio, o botão "Importar empreendimentos de exemplo" copia esses dados para o Firestore.
@@ -37,16 +37,20 @@ sem configurar redirects. Para URLs sem `#`, troque `HashRouter` por `BrowserRou
 src/
 ├─ data/                      ← TUDO que muda com frequência
 │  ├─ empreendimentos.js      ← lista de empreendimentos e seus materiais
-│  ├─ tiposMateriais.js       ← tipos de material (ordem, nome, ícone) e formatos
+│  ├─ tiposMateriais.js       ← categorias de material (ordem, nome, ícone)
 │  └─ config.js               ← textos da marca, status e limite de "Atualizados recentemente"
 ├─ utils/
 │  ├─ format.js               ← preço (BRL), data/hora, tempo relativo, busca sem acento
-│  └─ empreendimentos.js      ← busca, filtros, materiais visíveis, últimas atualizações
+│  ├─ empreendimentos.js      ← busca, filtros, últimas atualizações
+│  ├─ urls.js                 ← validação/sanitização de links (só https; bloqueia javascript:, data:, HTML)
+│  ├─ drive.js                ← links do Google Drive/Docs → ID + URL de preview
+│  └─ materiais.js            ← como exibir cada link, compatibilidade com o formato antigo, agrupamento
 ├─ components/                ← componentes reutilizáveis
 │  ├─ Logo, Icon, SmartImage, StatusBadge
 │  ├─ SearchBar, FilterChips
 │  ├─ EmpreendimentoCard, RecentesSection
 │  ├─ InfoGrid, MaterialCard, MaterialsSection
+│  ├─ VisualizadorMaterial    ← modal que abre o material dentro do site (com fallback)
 │  └─ ShareButton, Footer
 ├─ pages/
 │  ├─ Home.jsx                ← hero, busca, filtros, atualizados recentemente, grade
@@ -60,19 +64,25 @@ src/
 
 **Adicionar um empreendimento** — copie um objeto em `src/data/empreendimentos.js`, troque o `slug` (único, sem espaços) e os campos.
 
-**Adicionar/atualizar material** — dentro de `materiais`, cada tipo é uma lista:
+**Materiais do empreendimento** — cadastrados no painel (Admin → Editar → *Materiais do empreendimento*) só por **link**:
+o arquivo continua no Google Drive (ou outro serviço https) e o sistema guarda apenas os metadados.
+No Drive: arquivo → **Compartilhar** → "Qualquer pessoa com o link" → **Copiar link**, e cole no painel —
+o sistema converte sozinho para o modo de pré-visualização (`/preview`).
+
+Cada material fica em `materiaisLista` no documento do empreendimento:
 
 ```js
-tabela: [
-  { titulo: 'Tabela Novembro/2026', url: 'https://...', formato: 'planilha', atualizadoEm: '2026-11-01T09:00:00-03:00' },
-],
+{ id, empreendimentoId, titulo, categoria, urlOriginal, urlPreview, tipoOrigem, ordem, ativo, createdAt, updatedAt }
+// tipoOrigem: 'google_drive' | 'external_url' | 'video' | 'image' | 'outro'
 ```
 
-- `formato`: `pdf` | `imagem` | `planilha` | `video` | `link` (apenas define o selo do botão).
-- Tipos ausentes ou com lista vazia não aparecem na página.
-- `atualizadoEm` aparece como "Atualizada em dd/mm/aaaa às hh:mm" (fica verde por 7 dias) e alimenta a seção **Atualizados recentemente** da home.
+- Inativos não aparecem para o corretor. `updatedAt` vira "Atualizada em…" e alimenta **Atualizados recentemente**.
+- Empreendimentos salvos antes desse modelo (campo `materiais` agrupado por tipo) continuam aparecendo;
+  ao salvar pelo painel, passam para `materiaisLista` automaticamente.
+- Ao clicar, o material abre num visualizador dentro do site (`?material=<id>` na URL). Sites que não permitem
+  exibição embutida abrem pelo botão "Abrir em nova aba" — nunca fica tela branca sem explicação.
 
-**Novo tipo de material** — adicione em `TIPOS_MATERIAIS` (`src/data/tiposMateriais.js`); a ordem do array é a ordem na página.
+**Nova categoria de material** — adicione em `CATEGORIAS_MATERIAL` (`src/data/tiposMateriais.js`); a ordem do array é a ordem na página.
 
 **Logo oficial** — coloque o arquivo em `/public` (ex.: `public/logo.svg`) e defina `logoUrl: './logo.svg'` em `src/data/config.js`.
 
