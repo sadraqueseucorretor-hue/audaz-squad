@@ -27,7 +27,8 @@ export function materiaisVisiveis(emp) {
   const materiais = emp?.materiais || {};
   return TIPOS_MATERIAIS.map((tipo) => ({
     ...tipo,
-    itens: (materiais[tipo.chave] || []).filter((item) => item && item.url),
+    // `indice` é a posição original na lista, usada no link do visualizador.
+    itens: (materiais[tipo.chave] || []).map((item, indice) => ({ ...item, indice })).filter((item) => item && item.url),
   })).filter((tipo) => tipo.itens.length > 0);
 }
 

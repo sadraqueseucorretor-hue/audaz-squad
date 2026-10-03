@@ -12,7 +12,7 @@ export default function MaterialsSection({ emp }) {
       {tipos.length ? (
         <div className="materiais">
           {tipos.map((tipo) => (
-            <MaterialCard key={tipo.chave} tipo={tipo} />
+            <MaterialCard key={tipo.chave} tipo={tipo} slug={emp.slug} />
           ))}
         </div>
       ) : (

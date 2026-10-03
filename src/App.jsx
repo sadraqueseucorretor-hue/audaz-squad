@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import Empreendimento from './pages/Empreendimento.jsx';
+import Visualizador from './pages/Visualizador.jsx';
 import AdminGate from './pages/admin/AdminGate.jsx';
 import AdminLista from './pages/admin/AdminLista.jsx';
 import AdminEditor from './pages/admin/AdminEditor.jsx';
@@ -14,6 +15,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/empreendimento/:slug" element={<Empreendimento />} />
+        <Route path="/empreendimento/:slug/ver/:tipo/:indice" element={<Visualizador />} />
         <Route path="/admin" element={<AdminGate />}>
           <Route index element={<AdminLista />} />
           <Route path="novo" element={<AdminEditor />} />

@@ -1,9 +1,10 @@
+import { Link } from 'react-router-dom';
 import Icon from './Icon.jsx';
 import { FORMATOS } from '../data/tiposMateriais.js';
 import { formatarDataHora, ehRecente } from '../utils/format.js';
 
 // Um card por TIPO de material (Book, Tabela...). Cada arquivo do tipo vira um botão.
-export default function MaterialCard({ tipo }) {
+export default function MaterialCard({ tipo, slug }) {
   const ehTabela = tipo.chave === 'tabela';
   const unico = tipo.itens.length === 1;
 
@@ -20,20 +21,18 @@ export default function MaterialCard({ tipo }) {
       </header>
 
       <ul className="material__lista">
-        {tipo.itens.map((item, i) => (
-          <li key={`${item.url}-${i}`}>
-            <a
+        {tipo.itens.map((item) => (
+          <li key={`${item.url}-${item.indice}`}>
+            <Link
               className={`material__link ${unico ? 'material__link--unico' : ''}`}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
+              to={`/empreendimento/${slug}/ver/${tipo.chave}/${item.indice}`}
             >
               <span className="material__titulo">{item.titulo}</span>
               <span className="material__acoes">
                 {item.formato && <span className="formato">{FORMATOS[item.formato] || item.formato}</span>}
-                <Icon name="external" size={17} />
+                <Icon name="eye" size={17} />
               </span>
-            </a>
+            </Link>
             {item.atualizadoEm && (
               <p className={`material__data ${ehRecente(item.atualizadoEm) ? 'material__data--nova' : ''}`}>
                 <Icon name="clock" size={14} /> Atualizada em {formatarDataHora(item.atualizadoEm)}
