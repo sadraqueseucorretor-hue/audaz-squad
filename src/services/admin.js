@@ -40,6 +40,7 @@ export function enviarArquivo(arquivo, pasta, onProgresso = () => {}) {
 }
 
 // A logo fica gravada direto no Firestore (como data URL reduzida), sem depender do Storage.
+// As margens transparentes são cortadas para a logo ocupar todo o espaço disponível no topo.
 export function logoParaDataUrl(arquivo, ladoMax = 600) {
   return new Promise((resolve, reject) => {
     const leitor = new FileReader();
@@ -49,17 +50,41 @@ export function logoParaDataUrl(arquivo, ladoMax = 600) {
       const img = new Image();
       img.onerror = () => reject(new Error('Arquivo de imagem inválido.'));
       img.onload = () => {
-        const escala = Math.min(1, ladoMax / Math.max(img.width, img.height));
+        const { x, y, largura, altura } = areaVisivel(img);
+        const escala = Math.min(1, ladoMax / Math.max(largura, altura));
         const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * escala);
-        canvas.height = Math.round(img.height * escala);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.width = Math.round(largura * escala);
+        canvas.height = Math.round(altura * escala);
+        canvas.getContext('2d').drawImage(img, x, y, largura, altura, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL('image/png'));
       };
       img.src = leitor.result;
     };
     leitor.readAsDataURL(arquivo);
   });
+}
+
+// Retângulo que contém os pixels não transparentes da imagem (a imagem inteira se não houver transparência).
+function areaVisivel(img) {
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  const { data } = ctx.getImageData(0, 0, img.width, img.height);
+  let minX = img.width, minY = img.height, maxX = -1, maxY = -1;
+  for (let py = 0; py < img.height; py++) {
+    for (let px = 0; px < img.width; px++) {
+      if (data[(py * img.width + px) * 4 + 3] > 8) {
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+      }
+    }
+  }
+  if (maxX < 0) return { x: 0, y: 0, largura: img.width, altura: img.height };
+  return { x: minX, y: minY, largura: maxX - minX + 1, altura: maxY - minY + 1 };
 }
 
 export function formatoDoArquivo(arquivo) {
