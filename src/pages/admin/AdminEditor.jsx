@@ -15,12 +15,11 @@ import MateriaisEditor from './MateriaisEditor.jsx';
 
 const VAZIO = {
   slug: '', nome: '', construtora: 'Direcional', status: 'lancamento', bairro: '', cidade: '', uf: 'CE', endereco: '',
-  precoInicial: '', entrega: '', tipologias: [], quartos: '', suites: '', metragem: '', vagas: '', torres: '', unidades: '',
+  entrega: '',
   logo: '', fotos: [''], banner: '', mapsUrl: '', materiaisLista: [],
 };
 
 const gerarSlug = (nome) => normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const numeroOuNada = (v) => (v === '' || v === null || v === undefined ? null : Number(v));
 
 export default function AdminEditor() {
   const { slug } = useParams();
@@ -105,18 +104,17 @@ export default function AdminEditor() {
       };
     });
 
-    // `materiais` (formato antigo) sai do documento: a partir daqui vale só `materiaisLista`.
-    const { materiais: _formatoAntigo, ...dados } = form;
+    // Saem do documento: `materiais` (formato antigo — agora vale só `materiaisLista`) e os
+    // dados que deixaram de ser usados (valor, tipologia, quartos, suítes, metragem, vagas, torres, unidades).
+    const {
+      materiais: _formatoAntigo,
+      precoInicial: _p, tipologias: _t, quartos: _q, suites: _s, metragem: _m, vagas: _v, torres: _to, unidades: _u,
+      ...dados
+    } = form;
     const emp = {
       ...dados,
       slug: slugFinal,
       nome: form.nome.trim(),
-      precoInicial: numeroOuNada(form.precoInicial),
-      torres: numeroOuNada(form.torres),
-      unidades: numeroOuNada(form.unidades),
-      tipologias: (Array.isArray(form.tipologias) ? form.tipologias : String(form.tipologias).split(','))
-        .map((t) => t.trim())
-        .filter(Boolean),
       ...fotos,
       materiaisLista,
       ordem: original?.ordem ?? empreendimentos.length,
@@ -159,9 +157,6 @@ export default function AdminEditor() {
             </select>
           </Campo>
           <Campo rotulo="Construtora"><input value={form.construtora} onChange={campo('construtora')} /></Campo>
-          <Campo rotulo="Valor inicial (R$)" dica="Só números. Vazio mostra “Consulte”.">
-            <input type="number" min="0" step="100" value={form.precoInicial ?? ''} onChange={campo('precoInicial')} />
-          </Campo>
           <Campo rotulo="Entrega"><input value={form.entrega} onChange={campo('entrega')} placeholder="Ex.: Jun/2028" /></Campo>
           <Campo rotulo="Bairro"><input value={form.bairro} onChange={campo('bairro')} /></Campo>
           <Campo rotulo="Cidade"><input value={form.cidade} onChange={campo('cidade')} /></Campo>
@@ -170,25 +165,6 @@ export default function AdminEditor() {
           <Campo rotulo="Localização no Google Maps" largo>
             <CampoMaps valor={form.mapsUrl} endereco={form.endereco} onChange={(v) => definir('mapsUrl', v)} />
           </Campo>
-        </div>
-      </fieldset>
-
-      <fieldset className="admin-bloco">
-        <legend>Detalhes</legend>
-        <div className="admin-grade">
-          <Campo rotulo="Tipologias" dica="Separe por vírgula." largo>
-            <input
-              value={Array.isArray(form.tipologias) ? form.tipologias.join(', ') : form.tipologias}
-              onChange={(e) => definir('tipologias', e.target.value)}
-              placeholder="2 quartos, 2 quartos com suíte"
-            />
-          </Campo>
-          <Campo rotulo="Quartos"><input value={form.quartos} onChange={campo('quartos')} /></Campo>
-          <Campo rotulo="Suítes"><input value={form.suites} onChange={campo('suites')} /></Campo>
-          <Campo rotulo="Metragem"><input value={form.metragem} onChange={campo('metragem')} placeholder="41 a 48 m²" /></Campo>
-          <Campo rotulo="Vagas"><input value={form.vagas} onChange={campo('vagas')} /></Campo>
-          <Campo rotulo="Torres"><input type="number" min="0" value={form.torres ?? ''} onChange={campo('torres')} /></Campo>
-          <Campo rotulo="Unidades"><input type="number" min="0" value={form.unidades ?? ''} onChange={campo('unidades')} /></Campo>
         </div>
       </fieldset>
 

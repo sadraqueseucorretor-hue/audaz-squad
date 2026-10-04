@@ -1,9 +1,5 @@
 // Formatação e helpers puros (sem React) — fáceis de testar e reaproveitar.
 
-const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
-
-export const formatarPreco = (valor) => (typeof valor === 'number' ? brl.format(valor) : 'Consulte');
-
 export function formatarDataHora(iso) {
   if (!iso) return '';
   const d = new Date(iso);
