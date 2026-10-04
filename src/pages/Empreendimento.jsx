@@ -9,6 +9,7 @@ import MaterialsSection from '../components/MaterialsSection.jsx';
 import ShareButton from '../components/ShareButton.jsx';
 import Footer from '../components/Footer.jsx';
 import VisualizadorMaterial from '../components/VisualizadorMaterial.jsx';
+import MapaEmpreendimento from '../components/MapaEmpreendimento.jsx';
 import { listarMateriais } from '../utils/materiais.js';
 import { useDados } from '../context/DadosContext.jsx';
 import { buscarPorSlug, fotosDo } from '../utils/empreendimentos.js';
@@ -110,6 +111,7 @@ export default function Empreendimento() {
             </p>
           )}
           <InfoGrid itens={info} />
+          <MapaEmpreendimento emp={emp} />
         </section>
 
         <MaterialsSection emp={emp} onAbrir={abrirMaterial} />

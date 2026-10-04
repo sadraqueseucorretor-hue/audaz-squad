@@ -2,6 +2,7 @@
 // o formato antigo e agrupamento por categoria para exibição.
 import { CATEGORIAS_MATERIAL, categoriaDoTipoAntigo } from '../data/tiposMateriais.js';
 import { analisarLinkDrive } from './drive.js';
+import { analisarLinkMaps } from './mapa.js';
 import { sanitizarUrl } from './urls.js';
 
 const EXT_IMAGEM = /\.(jpe?g|png|webp|gif|avif)$/i;
@@ -62,15 +63,9 @@ export function analisarUrlMaterial(entrada) {
   const vimeo = host === 'vimeo.com' && url.pathname.match(/^\/(\d+)/)?.[1];
   if (vimeo) return ok({ tipoOrigem: 'video', urlPreview: `https://player.vimeo.com/video/${vimeo}`, modo: 'iframe' });
 
-  if ((host === 'google.com' || host === 'maps.google.com') && url.pathname.startsWith('/maps')) {
-    const local =
-      url.searchParams.get('query') ||
-      url.searchParams.get('q') ||
-      decodeURIComponent(url.pathname.match(/\/place\/([^/]+)/)?.[1] || '').replace(/\+/g, ' ');
-    if (local) {
-      return ok({ tipoOrigem: 'outro', urlPreview: `https://www.google.com/maps?q=${encodeURIComponent(local)}&output=embed`, modo: 'iframe' });
-    }
-    return ok({ tipoOrigem: 'outro', urlPreview: urlOriginal, modo: 'externo' });
+  const maps = analisarLinkMaps(urlOriginal);
+  if (maps.valido) {
+    return ok({ tipoOrigem: 'outro', urlPreview: maps.urlEmbed || urlOriginal, modo: maps.urlEmbed ? 'iframe' : 'externo' });
   }
 
   if (EXT_IMAGEM.test(arquivo)) return ok({ tipoOrigem: 'image', urlPreview: urlOriginal, modo: 'imagem' });
@@ -142,4 +137,23 @@ export function materiaisPorCategoria(emp) {
   return CATEGORIAS_MATERIAL.map((cat) => ({ ...cat, itens: ativos.filter((m) => m.categoria === cat.chave) })).filter(
     (cat) => cat.itens.length > 0
   );
+}
+
+/**
+ * Imagem de pré-visualização do material para o card (ou null → mostra o ícone da categoria).
+ * Drive: miniatura gerada pelo próprio Drive (1ª página do PDF, Docs, imagem). Alguns arquivos
+ * grandes não têm miniatura — o <img> cai no ícone pelo onError.
+ */
+export function miniaturaDoMaterial(material, largura = 800) {
+  const a = analisarUrlMaterial(material.urlOriginal);
+  if (!a.valido) return null;
+  if (a.tipoOrigem === 'google_drive') {
+    return a.drive.tipo === 'pasta' || a.drive.tipo === 'formulario'
+      ? null
+      : `https://drive.google.com/thumbnail?id=${a.drive.id}&sz=w${largura}`;
+  }
+  const youtube = a.urlPreview.match(/youtube(?:-nocookie)?\.com\/embed\/([\w-]+)/)?.[1];
+  if (youtube) return `https://i.ytimg.com/vi/${youtube}/hqdefault.jpg`;
+  if (a.tipoOrigem === 'image') return a.urlOriginal;
+  return null;
 }

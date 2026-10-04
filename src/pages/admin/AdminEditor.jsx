@@ -9,12 +9,14 @@ import { analisarUrlMaterial, listarMateriais } from '../../utils/materiais.js';
 import { sanitizarUrl } from '../../utils/urls.js';
 import CampoLinkFoto from './CampoLinkFoto.jsx';
 import FotosEditor from './FotosEditor.jsx';
+import CampoMaps from './CampoMaps.jsx';
+import { analisarLinkMaps } from '../../utils/mapa.js';
 import MateriaisEditor from './MateriaisEditor.jsx';
 
 const VAZIO = {
   slug: '', nome: '', construtora: 'Direcional', status: 'lancamento', bairro: '', cidade: '', uf: 'CE', endereco: '',
   precoInicial: '', entrega: '', tipologias: [], quartos: '', suites: '', metragem: '', vagas: '', torres: '', unidades: '',
-  logo: '', fotos: [''], banner: '', materiaisLista: [],
+  logo: '', fotos: [''], banner: '', mapsUrl: '', materiaisLista: [],
 };
 
 const gerarSlug = (nome) => normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -70,7 +72,10 @@ export default function AdminEditor() {
       .map((f, i) => validarFoto(f, `Foto ${i + 1} do card`))
       .filter(Boolean);
     // `imagem` continua gravada (= 1ª foto) para compatibilidade com quem lia o campo antigo.
-    const fotos = { logo, banner, fotos: listaFotos, imagem: listaFotos[0] || '' };
+    const maps = (form.mapsUrl || '').trim() ? analisarLinkMaps(form.mapsUrl) : null;
+    if (maps && !maps.valido) problemas.unshift(`Google Maps: ${maps.erro}`);
+    // Só a URL do mapa é guardada (do código de incorporação, aproveita apenas o src).
+    const fotos = { logo, banner, fotos: listaFotos, imagem: listaFotos[0] || '', mapsUrl: maps?.valido ? maps.url : '' };
     if (problemas.length) return setErro(problemas.join(' '));
 
     const agora = new Date().toISOString();
@@ -159,6 +164,9 @@ export default function AdminEditor() {
           <Campo rotulo="Cidade"><input value={form.cidade} onChange={campo('cidade')} /></Campo>
           <Campo rotulo="UF"><input value={form.uf} onChange={campo('uf')} maxLength={2} /></Campo>
           <Campo rotulo="Endereço completo" largo><input value={form.endereco} onChange={campo('endereco')} /></Campo>
+          <Campo rotulo="Localização no Google Maps" largo>
+            <CampoMaps valor={form.mapsUrl} endereco={form.endereco} onChange={(v) => definir('mapsUrl', v)} />
+          </Campo>
         </div>
       </fieldset>
 
