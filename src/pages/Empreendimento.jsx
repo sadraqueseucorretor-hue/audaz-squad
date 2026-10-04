@@ -13,7 +13,6 @@ import MapaEmpreendimento from '../components/MapaEmpreendimento.jsx';
 import { listarMateriais } from '../utils/materiais.js';
 import { useDados } from '../context/DadosContext.jsx';
 import { buscarPorSlug, fotosDo } from '../utils/empreendimentos.js';
-import { formatarPreco } from '../utils/format.js';
 
 export default function Empreendimento() {
   const { slug } = useParams();
@@ -54,17 +53,8 @@ export default function Empreendimento() {
   // Volta preservando a busca anterior quando houver histórico; senão vai para a home.
   const voltar = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'));
 
-  const info = [
-    { label: 'Valor inicial', valor: formatarPreco(emp.precoInicial), icone: 'tag', destaque: true },
-    { label: 'Entrega', valor: emp.entrega, icone: 'key', destaque: true },
-    { label: 'Tipologias', valor: emp.tipologias?.join(' · '), icone: 'layers', largo: true },
-    { label: 'Quartos', valor: emp.quartos, icone: 'bed' },
-    { label: 'Suítes', valor: emp.suites, icone: 'bath' },
-    { label: 'Metragem', valor: emp.metragem, icone: 'ruler' },
-    { label: 'Vagas', valor: emp.vagas, icone: 'car' },
-    { label: 'Torres', valor: emp.torres, icone: 'building' },
-    { label: 'Unidades', valor: emp.unidades, icone: 'grid' },
-  ];
+  // Na página do empreendimento, só o prazo de entrega (os demais dados ficam no cadastro e no card).
+  const info = [{ label: 'Entrega', valor: emp.entrega, icone: 'key', destaque: true }];
 
   return (
     <>
