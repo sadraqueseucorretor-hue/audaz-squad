@@ -15,7 +15,7 @@ import MateriaisEditor from './MateriaisEditor.jsx';
 
 const VAZIO = {
   slug: '', nome: '', construtora: 'Direcional', status: 'lancamento', bairro: '', cidade: '', uf: 'CE', endereco: '',
-  entrega: '',
+  entrega: '', observacoes: '',
   logo: '', fotos: [''], banner: '', mapsUrl: '', materiaisLista: [],
 };
 
@@ -115,6 +115,7 @@ export default function AdminEditor() {
       ...dados,
       slug: slugFinal,
       nome: form.nome.trim(),
+      observacoes: (form.observacoes || '').trim(),
       ...fotos,
       materiaisLista,
       ordem: original?.ordem ?? empreendimentos.length,
@@ -162,6 +163,13 @@ export default function AdminEditor() {
           <Campo rotulo="Cidade"><input value={form.cidade} onChange={campo('cidade')} /></Campo>
           <Campo rotulo="UF"><input value={form.uf} onChange={campo('uf')} maxLength={2} /></Campo>
           <Campo rotulo="Endereço completo" largo><input value={form.endereco} onChange={campo('endereco')} /></Campo>
+          <Campo
+            rotulo="Observações para o corretor"
+            dica="Opcional. Aparece em destaque na página do empreendimento (ex.: campanha do mês, condição especial, avisos). Use Enter para separar parágrafos."
+            largo
+          >
+            <textarea rows={4} maxLength={2000} value={form.observacoes || ''} onChange={campo('observacoes')} placeholder="Ex.: Campanha de outubro: ITBI e registro grátis para contratos assinados até 31/10." />
+          </Campo>
           <Campo rotulo="Localização no Google Maps" largo>
             <CampoMaps valor={form.mapsUrl} endereco={form.endereco} onChange={(v) => definir('mapsUrl', v)} />
           </Campo>

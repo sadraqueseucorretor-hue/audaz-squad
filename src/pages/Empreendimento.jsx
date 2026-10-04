@@ -100,6 +100,16 @@ export default function Empreendimento() {
               <span>{emp.endereco}</span>
             </p>
           )}
+          {emp.observacoes?.trim() && (
+            // Texto puro (sem HTML): quebras de linha preservadas pelo CSS.
+            <aside className="observacoes" aria-label="Observações">
+              <span className="observacoes__icone"><Icon name="info" size={20} /></span>
+              <div>
+                <strong>Observações</strong>
+                <p>{emp.observacoes.trim()}</p>
+              </div>
+            </aside>
+          )}
           <InfoGrid itens={info} />
           <MapaEmpreendimento emp={emp} />
         </section>
