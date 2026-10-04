@@ -10,13 +10,25 @@ export const ordenar = (lista) =>
 
 export const buscarPorSlug = (lista, slug) => lista.find((e) => e.slug === slug);
 
-export const opcoesUnicas = (lista, campo) => [...new Set(lista.map((e) => e[campo]).filter(Boolean))].sort();
+// Valores distintos de um campo, sem duplicar por maiúsculas/acentos ("FORTALEZA" = "Fortaleza").
+// Entre as grafias, prefere a que não está toda em maiúsculas.
+export function opcoesUnicas(lista, campo) {
+  const porChave = new Map();
+  for (const e of lista) {
+    const valor = (e[campo] || '').trim();
+    if (!valor) continue;
+    const chave = normalizar(valor);
+    const atual = porChave.get(chave);
+    if (!atual || (atual === atual.toUpperCase() && valor !== valor.toUpperCase())) porChave.set(chave, valor);
+  }
+  return [...porChave.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
 
 export function filtrarEmpreendimentos(lista, { busca = '', status = '', cidade = '' }) {
   const termo = normalizar(busca);
   return lista.filter((e) => {
     if (status && e.status !== status) return false;
-    if (cidade && e.cidade !== cidade) return false;
+    if (cidade && normalizar(e.cidade) !== normalizar(cidade)) return false;
     if (!termo) return true;
     const alvo = normalizar(`${e.nome} ${e.bairro} ${e.cidade} ${e.construtora}`);
     return termo.split(/\s+/).every((parte) => alvo.includes(parte));

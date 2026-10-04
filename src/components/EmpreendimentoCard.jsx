@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import Carrossel from './Carrossel.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import Icon from './Icon.jsx';
-import { formatarPreco } from '../utils/format.js';
 import { fotosDo } from '../utils/empreendimentos.js';
 
 export default function EmpreendimentoCard({ emp, prioridade = false }) {
@@ -23,18 +22,7 @@ export default function EmpreendimentoCard({ emp, prioridade = false }) {
           <Icon name="pin" size={15} /> {emp.bairro} · {emp.cidade}/{emp.uf}
         </p>
 
-        <div className="emp-card__meta">
-          <div>
-            <span className="emp-card__meta-label">A partir de</span>
-            <strong className="emp-card__preco">{formatarPreco(emp.precoInicial)}</strong>
-          </div>
-          <div className="emp-card__tipologia">
-            <span className="emp-card__meta-label">Tipologia</span>
-            <span>{emp.quartos} quartos · {emp.metragem}</span>
-          </div>
-        </div>
-
-        <Link to={url} className="btn btn--primary btn--block">
+        <Link to={url} className="btn btn--primary btn--block emp-card__botao">
           Acessar Materiais <Icon name="arrowRight" size={18} />
         </Link>
       </div>

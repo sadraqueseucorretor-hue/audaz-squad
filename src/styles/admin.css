@@ -291,3 +291,7 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   transform: scale(0.4); transform-origin: 0 0; pointer-events: none; background: transparent;
 }
 .material__previa-carregando { position: absolute; inset: 0; display: grid; place-items: center; color: var(--vermelho); opacity: 0.35; }
+
+/* Card sem preço/tipologia: botão sempre no rodapé do card */
+.emp-card__botao { margin-top: auto; }
+.emp-card__local { margin-bottom: 16px; }
