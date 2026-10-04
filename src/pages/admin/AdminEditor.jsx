@@ -57,6 +57,7 @@ export default function AdminEditor() {
       const a = analisarUrlMaterial(m.urlOriginal);
       if (!m.titulo.trim()) problemas.push(`Material ${i + 1}: informe o nome.`);
       if (!a.valido) problemas.push(`Material ${i + 1}${m.titulo.trim() ? ` (${m.titulo.trim()})` : ''}: ${a.erro}`);
+      if (m.capaUrl?.trim() && !sanitizarUrl(m.capaUrl).valida) problemas.push(`Material ${i + 1}: ${sanitizarUrl(m.capaUrl).erro} (imagem de capa)`);
       return a;
     });
     // Fotos e logo: só link (https). Vazio é permitido (o site mostra as iniciais).
@@ -86,7 +87,8 @@ export default function AdminEditor() {
       const antes = anteriores.get(m.id);
       const mudou =
         !antes || antes.titulo !== m.titulo.trim() || antes.categoria !== m.categoria ||
-        antes.urlOriginal !== a.urlOriginal || (antes.ativo !== false) !== (m.ativo !== false);
+        antes.urlOriginal !== a.urlOriginal || (antes.ativo !== false) !== (m.ativo !== false) ||
+        (antes.capaUrl || '') !== (m.capaUrl || '').trim();
       return {
         id: m.id,
         empreendimentoId: slugFinal,
@@ -95,6 +97,7 @@ export default function AdminEditor() {
         urlOriginal: a.urlOriginal,
         urlPreview: a.urlPreview,
         tipoOrigem: a.tipoOrigem,
+        capaUrl: m.capaUrl?.trim() ? sanitizarUrl(m.capaUrl).url : '',
         ordem,
         ativo: m.ativo !== false,
         createdAt: antes?.createdAt || agora,

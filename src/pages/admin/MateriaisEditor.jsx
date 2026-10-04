@@ -4,6 +4,7 @@ import VisualizadorMaterial from '../../components/VisualizadorMaterial.jsx';
 import { CATEGORIAS_MATERIAL } from '../../data/tiposMateriais.js';
 import { formatarDataHora } from '../../utils/format.js';
 import { analisarUrlMaterial } from '../../utils/materiais.js';
+import CampoLinkFoto from './CampoLinkFoto.jsx';
 
 const novoId = () => (crypto.randomUUID ? crypto.randomUUID() : `m-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
@@ -98,6 +99,11 @@ export default function MateriaisEditor({ materiais, onChange, contexto }) {
                   maxLength={2000}
                 />
                 <StatusDoLink url={m.urlOriginal} />
+              </label>
+              <label className="campo campo--largo">
+                <span>Imagem de capa <small>(opcional)</small></span>
+                <CampoLinkFoto valor={m.capaUrl || ''} onChange={(v) => alterar(m.id, { capaUrl: v })} />
+                <small>Link de uma imagem no Drive para aparecer no card (ex.: a 1ª página do book). Sem capa, o sistema usa a pré-visualização do próprio arquivo.</small>
               </label>
             </div>
 

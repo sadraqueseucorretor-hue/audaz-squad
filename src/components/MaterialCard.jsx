@@ -1,22 +1,40 @@
 import { useState } from 'react';
 import Icon from './Icon.jsx';
 import { formatarDataHora, ehRecente } from '../utils/format.js';
-import { miniaturaDoMaterial, seloDoMaterial } from '../utils/materiais.js';
+import { analisarUrlMaterial, miniaturaDoMaterial, seloDoMaterial } from '../utils/materiais.js';
+import { urlImagem } from '../utils/drive.js';
 
-// Pré-visualização do material: miniatura do arquivo ou, sem miniatura, o ícone da categoria.
+// Pré-visualização do material, em ordem de preferência:
+// 1) imagem de capa cadastrada no admin; 2) miniatura gerada pelo Drive/YouTube;
+// 3) a 1ª página do próprio arquivo pelo visualizador do Drive, em tamanho reduzido
+//    (para PDFs grandes, que o Drive não gera miniatura); 4) o ícone da categoria.
 function Previa({ material, icone }) {
-  const src = miniaturaDoMaterial(material);
-  const [falhou, setFalhou] = useState(false);
-  if (!src || falhou) {
+  const capa = material.capaUrl ? urlImagem(material.capaUrl, 800) : null;
+  const miniatura = capa || miniaturaDoMaterial(material);
+  const analise = analisarUrlMaterial(material.urlOriginal);
+  // Arquivos e pastas do Drive (a pasta aparece como grade de fotos) podem ser mostrados reduzidos.
+  const podeEmbutir = analise.valido && analise.tipoOrigem === 'google_drive' && analise.drive.tipo !== 'formulario';
+  const [etapa, setEtapa] = useState(miniatura ? 'imagem' : podeEmbutir ? 'pagina' : 'icone');
+
+  if (etapa === 'imagem') {
     return (
-      <span className="material__previa material__previa--icone" aria-hidden="true">
-        <Icon name={icone} size={34} />
+      <span className="material__previa" aria-hidden="true">
+        <img src={miniatura} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer"
+          onError={() => setEtapa(podeEmbutir ? 'pagina' : 'icone')} />
+      </span>
+    );
+  }
+  if (etapa === 'pagina') {
+    return (
+      <span className="material__previa material__previa--pagina" aria-hidden="true">
+        <span className="material__previa-carregando"><Icon name={icone} size={30} /></span>
+        <iframe src={analise.urlPreview} title="" tabIndex={-1} loading="lazy" sandbox="allow-scripts allow-same-origin" />
       </span>
     );
   }
   return (
-    <span className="material__previa" aria-hidden="true">
-      <img src={src} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFalhou(true)} />
+    <span className="material__previa material__previa--icone" aria-hidden="true">
+      <Icon name={icone} size={34} />
     </span>
   );
 }
