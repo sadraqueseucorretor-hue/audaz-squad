@@ -33,10 +33,12 @@ export function analisarLinkDrive(entrada) {
     const m = caminho.match(/^\/(?:a\/[^/]+\/)?(document|spreadsheets|presentation|forms)\/d\/(?:e\/)?([\w-]+)/);
     if (!m || !ID_VALIDO.test(m[2])) return { ...base, valido: false };
     const tipos = { document: 'documento', spreadsheets: 'planilha', presentation: 'apresentacao', forms: 'formulario' };
+    // Planilha: mantém a aba escolhida no link (?gid=… ou #gid=…).
+    const aba = m[1] === 'spreadsheets' ? url.searchParams.get('gid') || url.hash.match(/gid=(\d+)/)?.[1] : null;
     const urlPreview =
       m[1] === 'forms'
         ? `https://docs.google.com/forms/d/e/${m[2]}/viewform?embedded=true`
-        : `https://docs.google.com/${m[1]}/d/${m[2]}/preview`;
+        : `https://docs.google.com/${m[1]}/d/${m[2]}/preview${aba ? `#gid=${aba}` : ''}`;
     return { ...base, valido: true, id: m[2], tipo: tipos[m[1]], urlPreview };
   }
 

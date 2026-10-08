@@ -35,6 +35,7 @@ export default function AdminGate() {
           <Logo compacto />
           <nav className="admin__nav">
             <NavLink to="/admin" end>Empreendimentos</NavLink>
+            <NavLink to="/admin/tabela">Tabela de valores</NavLink>
             <NavLink to="/admin/marca">Logo e textos</NavLink>
             <Link to="/" target="_blank">Ver site</Link>
           </nav>

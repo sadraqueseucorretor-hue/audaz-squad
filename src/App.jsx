@@ -2,6 +2,8 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home.jsx';
 import Empreendimento from './pages/Empreendimento.jsx';
 import Visualizador from './pages/Visualizador.jsx';
+import TabelaValores from './pages/TabelaValores.jsx';
+import AdminTabela from './pages/admin/AdminTabela.jsx';
 import AdminGate from './pages/admin/AdminGate.jsx';
 import AdminLista from './pages/admin/AdminLista.jsx';
 import AdminEditor from './pages/admin/AdminEditor.jsx';
@@ -15,12 +17,14 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/empreendimento/:slug" element={<Empreendimento />} />
+        <Route path="/tabela-valores" element={<TabelaValores />} />
         <Route path="/empreendimento/:slug/ver/:tipo/:indice" element={<Visualizador />} />
         <Route path="/admin" element={<AdminGate />}>
           <Route index element={<AdminLista />} />
           <Route path="novo" element={<AdminEditor />} />
           <Route path="editar/:slug" element={<AdminEditor />} />
           <Route path="marca" element={<AdminMarca />} />
+          <Route path="tabela" element={<AdminTabela />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

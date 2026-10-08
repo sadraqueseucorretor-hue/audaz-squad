@@ -304,3 +304,20 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
 .observacoes__icone { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--dourado); color: #fff; flex-shrink: 0; }
 .observacoes strong { display: block; font-family: var(--fonte-titulo); color: var(--azul); margin-bottom: 4px; }
 .observacoes p { white-space: pre-line; overflow-wrap: anywhere; font-size: 15px; line-height: 1.55; }
+
+/* Aba "Tabela de valores" */
+.hero__botoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.btn-admin--destaque { background: var(--vermelho); border-color: var(--vermelho); }
+.btn-admin--destaque:hover { background: var(--vinho); border-color: var(--vinho); }
+.tabela-pagina { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--azul-noite); color: #fff; }
+.tabela-pagina__topo { display: flex; align-items: center; gap: 12px; flex-shrink: 0; background: var(--azul); padding: calc(8px + env(safe-area-inset-top)) var(--gutter) 8px; }
+.tabela-pagina__topo .btn-icone { border: 0; color: #fff; }
+.tabela-pagina__titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tabela-pagina__titulo strong { font-family: var(--fonte-titulo); font-size: 16px; }
+.tabela-pagina__titulo span { font-size: 12px; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 640px) { .tabela-pagina__topo .logo { display: none; } .tabela-pagina__rotulo { display: none; } .tabela-pagina__topo .visor__botao { padding: 0 11px; } }
+.tabela-pagina__conteudo { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; background: #fff; }
+.tabela-pagina__conteudo .visor__aviso { color: var(--texto); }
+.tabela-pagina__conteudo .visor__aviso p { color: var(--texto-suave); }
+.tabela-pagina__conteudo .visor__aviso .visor__botao--claro { background: var(--azul); color: #fff; }
+.admin-tabela__previa { margin-top: 14px; width: 100%; height: 480px; border: 1px solid var(--borda); border-radius: var(--raio-sm); background: #fff; }

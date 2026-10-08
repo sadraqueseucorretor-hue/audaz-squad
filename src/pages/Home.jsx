@@ -44,9 +44,16 @@ export default function Home() {
         <div className="container">
           <nav className="hero__nav">
             <Logo />
-            <Link to="/admin" className="btn-admin">
-              <Icon name="key" size={16} /> Acesso Admin
-            </Link>
+            <div className="hero__botoes">
+              {SITE.tabelaValoresUrl && (
+                <Link to="/tabela-valores" className="btn-admin btn-admin--destaque">
+                  <Icon name="table" size={16} /> Tabela de valores
+                </Link>
+              )}
+              <Link to="/admin" className="btn-admin">
+                <Icon name="key" size={16} /> Acesso Admin
+              </Link>
+            </div>
           </nav>
           <div className="hero__conteudo">
             <p className="hero__eyebrow">{SITE.marca} · {SITE.parceiro}</p>
