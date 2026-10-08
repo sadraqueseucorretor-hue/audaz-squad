@@ -14,7 +14,7 @@ export const FIREBASE_CONFIG = {
 export const ADMIN_EMAILS = ['sadraqueseucorretor@gmail.com'];
 
 // Chave do Google para LER pastas públicas do Drive (lista de PDFs da Tabela de valores).
-// Criada no Google Cloud (projeto audazsquad) com: API restrita ao "Google Drive API" e
-// uso restrito ao site (referenciadores HTTP). Só lê arquivos compartilhados como
+// É a mesma chave do Firebase, com a "Google Drive API" liberada nas restrições dela
+// (Google Cloud → APIs e serviços → Credenciais). Só lê arquivos compartilhados como
 // "Qualquer pessoa com o link" — não dá acesso a nada privado.
-export const GOOGLE_DRIVE_API_KEY = '';
+export const GOOGLE_DRIVE_API_KEY = FIREBASE_CONFIG.apiKey;
