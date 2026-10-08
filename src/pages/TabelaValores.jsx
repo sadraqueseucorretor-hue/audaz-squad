@@ -4,7 +4,7 @@ import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
 import { useDados } from '../context/DadosContext.jsx';
 import { analisarUrlMaterial } from '../utils/materiais.js';
-import { listarAbasPlanilha, urlAbaPlanilha } from '../utils/planilha.js';
+import { carregarMenuPlanilha, listarAbasPlanilha, urlAbaPlanilha } from '../utils/planilha.js';
 
 // Aba "Tabela de valores": a planilha (Google Sheets) cadastrada no admin, em tela cheia,
 // com um menu próprio das abas da planilha (os links internos dela não funcionam embutidos).
@@ -18,7 +18,26 @@ export default function TabelaValores() {
   const [params, setParams] = useSearchParams();
   const [abas, setAbas] = useState([]);
   const [carregou, setCarregou] = useState(false);
+  const [menu, setMenu] = useState(null);
   const abaAtual = params.get('aba') || gidInicial || abas[0]?.gid || '';
+  // Aba de menu da planilha: a chamada "MENU" (ou a do link cadastrado / a primeira).
+  const menuGid = abas.find((a) => /^menu$/i.test(a.nome))?.gid || gidInicial || abas[0]?.gid || '';
+
+  useEffect(() => {
+    let ativo = true;
+    if (planilha && menuGid) carregarMenuPlanilha(planilha.id, menuGid).then((m) => ativo && setMenu(m));
+    return () => {
+      ativo = false;
+    };
+  }, [planilha?.id, menuGid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mantém o empreendimento escolhido visível na barra de abas (ela rola na horizontal).
+  useEffect(() => {
+    document.querySelector('.tabela-abas__item.ativo')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }, [abaAtual, abas.length]);
+
+  // Na aba de menu, o site desenha o menu clicável (os links da planilha embutida não funcionam).
+  const mostrarMenu = Boolean(menu) && abaAtual === menuGid;
 
   useEffect(() => {
     document.title = `Tabela de valores · ${site.marca}`;
@@ -76,7 +95,9 @@ export default function TabelaValores() {
       )}
 
       <div className="tabela-pagina__conteudo">
-        {!siteCarregado ? null : embutivel ? (
+        {!siteCarregado ? null : mostrarMenu ? (
+          <MenuTabela menu={menu} onEscolher={escolherAba} />
+        ) : embutivel ? (
           <>
             {!carregou && (
               <div className="visor__camada" aria-live="polite">
@@ -105,6 +126,42 @@ export default function TabelaValores() {
             <Link to="/" className="visor__botao visor__botao--claro">Voltar aos empreendimentos</Link>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Menu clicável montado a partir da aba MENU da planilha (mesmos grupos "Linha …" e links).
+function MenuTabela({ menu, onEscolher }) {
+  return (
+    <div className="tabela-menu">
+      <div className="tabela-menu__interno">
+        {menu.titulo && <h2 className="tabela-menu__titulo">{menu.titulo}</h2>}
+        {menu.destaques.length > 0 && (
+          <div className="tabela-menu__destaques">
+            {menu.destaques.map((d) => (
+              <button key={d.gid} type="button" className="tabela-menu__destaque" onClick={() => onEscolher(d.gid)}>
+                <Icon name="tag" size={18} /> {d.nome}
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="tabela-menu__rotulo">Empreendimentos</p>
+        <div className="tabela-menu__linhas">
+          {menu.linhas.map((linha) => (
+            <section key={linha.nome} className="tabela-menu__linha">
+              <h3>{linha.nome}</h3>
+              <div className="tabela-menu__itens">
+                {linha.itens.map((item) => (
+                  <button key={item.gid} type="button" className="tabela-menu__item" onClick={() => onEscolher(item.gid)}>
+                    <span>{item.nome}</span>
+                    <Icon name="arrowRight" size={16} />
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
     </div>
   );
