@@ -138,3 +138,21 @@ test('Pasta de tabelas: nomes amigáveis e grupos por linha', () => {
   assert.deepEqual(g.map((x) => [x.nome, x.itens.map((i) => i.id)]), [['Conquista', ['2', '1']], ['Viva Vida', ['3']]]);
   assert.deepEqual(agruparArquivos([{ id: '1', nome: 'Conquista Sabiá.pdf' }, { id: '2', nome: 'Nature Arbo.pdf' }], 'sabia').map((x) => x.nome), ['Conquista']);
 });
+
+import { mesDasTabelas, nomeEmpreendimento } from '../src/utils/pastaDrive.js';
+
+test('Pasta de tabelas: nome do empreendimento sem mês/versão e mês do título', () => {
+  const casos = {
+    'Nature Arbo - SETEMBRO_26 V2.pptx.pdf': 'Nature Arbo',
+    'Viva Vida Tropical-SETEMBRO ajustada.pdf': 'Viva Vida Tropical',
+    'Estilo Passaré. SETEMBRO.26.pdf': 'Estilo Passaré',
+    'Lúmina Fátima - Set26.pdf': 'Lúmina Fátima',
+    'Conquista Maraponga SETEMBRO 2026.pdf': 'Conquista Maraponga',
+    'Seano Beach e home - Setembro.26.pdf': 'Seano Beach e home',
+    'Viva Vida Maracanaú - SETEMBRO.pdf': 'Viva Vida Maracanaú',
+    'Tabela - Viva Vida Siqueira - SETEMBRO 2026.pdf': 'Viva Vida Siqueira',
+  };
+  for (const [arquivo, esperado] of Object.entries(casos)) assert.equal(nomeEmpreendimento(arquivo), esperado, arquivo);
+  assert.equal(mesDasTabelas(Object.keys(casos).map((nome) => ({ nome }))), 'Setembro 2026');
+  assert.equal(mesDasTabelas([{ nome: 'Tabela geral.pdf' }]), '');
+});
