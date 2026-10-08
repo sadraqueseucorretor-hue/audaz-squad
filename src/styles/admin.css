@@ -321,3 +321,16 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
 .tabela-pagina__conteudo .visor__aviso p { color: var(--texto-suave); }
 .tabela-pagina__conteudo .visor__aviso .visor__botao--claro { background: var(--azul); color: #fff; }
 .admin-tabela__previa { margin-top: 14px; width: 100%; height: 480px; border: 1px solid var(--borda); border-radius: var(--raio-sm); background: #fff; }
+
+/* Menu de abas da tabela de valores (substitui o MENU da planilha, que não funciona embutido) */
+.tabela-abas {
+  display: flex; gap: 8px; flex-shrink: 0; overflow-x: auto; scrollbar-width: thin;
+  padding: 10px var(--gutter); background: var(--azul-noite); border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tabela-abas__item {
+  flex-shrink: 0; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06); color: #fff; font: inherit; font-size: 14px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  transition: background var(--transicao), border-color var(--transicao);
+}
+.tabela-abas__item:hover { background: rgba(255, 255, 255, 0.16); }
+.tabela-abas__item.ativo { background: var(--vermelho); border-color: var(--vermelho); }

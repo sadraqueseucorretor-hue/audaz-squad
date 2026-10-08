@@ -96,3 +96,27 @@ test('Empreendimentos: fotos antigas, miniatura com logo e cidades sem duplicar'
   assert.deepEqual(opcoesUnicas(lista, 'cidade'), ['Eusébio', 'Fortaleza']);
   assert.equal(filtrarEmpreendimentos(lista, { cidade: 'Fortaleza' }).length, 2);
 });
+
+import { extrairAbas, urlAbaPlanilha } from '../src/utils/planilha.js';
+
+test('Planilha: extrai as abas (nome + gid) do HTML do Google', () => {
+  const html = `items.push({name: "MENU", pageUrl: "https:\\/\\/docs.google.com\\/x?headers\\x3dtrue&gid=1", gid: "1806500562"});
+  items.push({name: "Condições Comerciais ", pageUrl: "https:\\/\\/x", gid: "1606980535"});
+  items.push({name: "A \\x26 B", pageUrl: "https:\\/\\/x", gid: "7"});`;
+  assert.deepEqual(extrairAbas(html), [
+    { nome: 'MENU', gid: '1806500562' },
+    { nome: 'Condições Comerciais', gid: '1606980535' },
+    { nome: 'A & B', gid: '7' },
+  ]);
+  assert.equal(urlAbaPlanilha('ID', '7'), 'https://docs.google.com/spreadsheets/d/ID/htmlview/sheet?headers=false&gid=7');
+  assert.equal(urlAbaPlanilha('ID', ''), 'https://docs.google.com/spreadsheets/d/ID/preview');
+});
+
+test('Planilha: HTML real tem as abas da tabela unificada', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const arquivo = process.env.HTML_PLANILHA;
+  if (!arquivo) return;
+  const abas = extrairAbas(await readFile(arquivo, 'utf8'));
+  assert.ok(abas.length > 10);
+  assert.ok(abas.some((a) => a.nome === 'Conquista Maraponga' && a.gid === '1334182049'));
+});
