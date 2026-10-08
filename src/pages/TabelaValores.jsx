@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
+import GaleriaTabelas from '../components/GaleriaTabelas.jsx';
 import { useDados } from '../context/DadosContext.jsx';
 import { analisarUrlMaterial } from '../utils/materiais.js';
 import { carregarMenuPlanilha, listarAbasPlanilha, urlAbaPlanilha } from '../utils/planilha.js';
@@ -13,6 +14,8 @@ export default function TabelaValores() {
   const { site, siteCarregado } = useDados();
   const analise = site.tabelaValoresUrl ? analisarUrlMaterial(site.tabelaValoresUrl) : null;
   const planilha = analise?.valido && analise.drive?.tipo === 'planilha' ? analise.drive : null;
+  // Link de pasta: mostra a galeria com todas as tabelas (PDFs) da pasta.
+  const pasta = analise?.valido && analise.drive?.tipo === 'pasta' ? analise.drive : null;
   const gidInicial = planilha?.urlPreview.match(/gid=(\d+)/)?.[1] || '';
 
   const [params, setParams] = useSearchParams();
@@ -71,7 +74,7 @@ export default function TabelaValores() {
           <strong>Tabela de valores</strong>
           <span>{abas.find((a) => a.gid === abaAtual)?.nome || site.marca}</span>
         </div>
-        {analise?.valido && (
+        {analise?.valido && !pasta && (
           <a className="visor__botao" href={analise.urlOriginal} target="_blank" rel="noopener noreferrer">
             <Icon name="external" size={17} /> <span className="tabela-pagina__rotulo">Abrir planilha original</span>
           </a>
@@ -95,7 +98,9 @@ export default function TabelaValores() {
       )}
 
       <div className="tabela-pagina__conteudo">
-        {!siteCarregado ? null : mostrarMenu ? (
+        {!siteCarregado ? null : pasta ? (
+          <GaleriaTabelas pastaId={pasta.id} urlPasta={analise.urlOriginal} />
+        ) : mostrarMenu ? (
           <MenuTabela menu={menu} onEscolher={escolherAba} />
         ) : embutivel ? (
           <>

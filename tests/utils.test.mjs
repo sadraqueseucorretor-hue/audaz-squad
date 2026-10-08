@@ -120,3 +120,21 @@ test('Planilha: HTML real tem as abas da tabela unificada', async () => {
   assert.ok(abas.length > 10);
   assert.ok(abas.some((a) => a.nome === 'Conquista Maraponga' && a.gid === '1334182049'));
 });
+
+import { agruparArquivos, grupoDoArquivo, nomeAmigavel } from '../src/utils/pastaDrive.js';
+
+test('Pasta de tabelas: nomes amigáveis e grupos por linha', () => {
+  assert.equal(nomeAmigavel('Tabela - Viva Vida Siqueira - SETEMBRO 2026.pdf'), 'Viva Vida Siqueira - SETEMBRO 2026');
+  assert.equal(nomeAmigavel('Nature Arbo - SETEMBRO_26 V2.pptx.pdf'), 'Nature Arbo - SETEMBRO 26 V2');
+  assert.equal(grupoDoArquivo('Vida Nova Caucaia-SETEMBRO.pdf'), 'Viva Vida');
+  assert.equal(grupoDoArquivo('Viva Vida Tropical-SETEMBRO ajustada.pdf'), 'Viva Vida');
+  assert.equal(grupoDoArquivo('Estilo Passaré. SETEMBRO.26.pdf'), 'Estilo');
+  assert.equal(grupoDoArquivo('Lúmina Fátima - Set26.pdf'), 'Lúmina');
+  const g = agruparArquivos([
+    { id: '1', nome: 'Conquista Sabiá - SETEMBRO.pdf' },
+    { id: '2', nome: 'Conquista Maraponga SETEMBRO 2026.pdf' },
+    { id: '3', nome: 'Viva Vida Sul - SETEMBRO 26.pptx.pdf' },
+  ]);
+  assert.deepEqual(g.map((x) => [x.nome, x.itens.map((i) => i.id)]), [['Conquista', ['2', '1']], ['Viva Vida', ['3']]]);
+  assert.deepEqual(agruparArquivos([{ id: '1', nome: 'Conquista Sabiá.pdf' }, { id: '2', nome: 'Nature Arbo.pdf' }], 'sabia').map((x) => x.nome), ['Conquista']);
+});

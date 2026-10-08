@@ -12,3 +12,9 @@ export const FIREBASE_CONFIG = {
 
 // E-mails com acesso ao painel /admin. Precisa bater com a lista em firestore.rules.
 export const ADMIN_EMAILS = ['sadraqueseucorretor@gmail.com'];
+
+// Chave do Google para LER pastas públicas do Drive (lista de PDFs da Tabela de valores).
+// Criada no Google Cloud (projeto audazsquad) com: API restrita ao "Google Drive API" e
+// uso restrito ao site (referenciadores HTTP). Só lê arquivos compartilhados como
+// "Qualquer pessoa com o link" — não dá acesso a nada privado.
+export const GOOGLE_DRIVE_API_KEY = '';

@@ -16,8 +16,9 @@ export default function AdminTabela() {
 
   const analise = url.trim() ? analisarUrlMaterial(url) : null;
 
-  let status = <p className="admin-dica">No Google Planilhas: Compartilhar → “Qualquer pessoa com o link” (Leitor) → Copiar link.</p>;
+  let status = <p className="admin-dica">Pasta com as tabelas em PDF (ou uma planilha do Google). No Drive: Compartilhar → “Qualquer pessoa com o link” → Copiar link.</p>;
   if (analise && !analise.valido) status = <p className="link-status link-status--erro"><Icon name="alert" size={15} /> {analise.erro}</p>;
+  else if (analise?.drive?.tipo === 'pasta') status = <p className="link-status link-status--ok"><Icon name="check" size={15} /> Pasta do Google Drive reconhecida — o site mostra todas as tabelas (PDFs) da pasta, com prévia e busca.</p>;
   else if (analise?.drive?.tipo === 'planilha') status = <p className="link-status link-status--ok"><Icon name="check" size={15} /> Planilha do Google reconhecida — abre dentro do Audaz Squad (incluindo as abas).</p>;
   else if (analise?.modo === 'externo') status = <p className="link-status link-status--aviso"><Icon name="external" size={15} /> Link válido, mas esse site não permite exibir aqui dentro — o corretor abre em nova aba.</p>;
   else if (analise) status = <p className="link-status link-status--ok"><Icon name="check" size={15} /> Link válido — abre dentro do Audaz Squad.</p>;
@@ -49,14 +50,14 @@ export default function AdminTabela() {
       <fieldset className="admin-bloco">
         <legend>Link da planilha</legend>
         <label className="campo">
-          <span>Link do Google Planilhas</span>
+          <span>Link da pasta do Drive ou da planilha do Google</span>
           <input
             type="url"
             inputMode="url"
             maxLength={2000}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://docs.google.com/spreadsheets/d/…/edit?gid=…"
+            placeholder="https://drive.google.com/drive/folders/… ou https://docs.google.com/spreadsheets/d/…"
           />
           {status}
         </label>
