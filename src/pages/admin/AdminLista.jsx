@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDados } from '../../context/DadosContext.jsx';
-import { STATUS } from '../../data/config.js';
+import { STATUS, RECENTES_LIMITE } from '../../data/config.js';
 import { empreendimentos as exemplos } from '../../data/empreendimentos.js';
 import { excluirEmpreendimento, importarExemplos, salvarOrdem, mensagemErro } from '../../services/admin.js';
-import { ultimaAtualizacao } from '../../utils/empreendimentos.js';
+import { atualizadosRecentemente, ultimaAtualizacao } from '../../utils/empreendimentos.js';
+import RecentesSection from '../../components/RecentesSection.jsx';
 import { tempoRelativo } from '../../utils/format.js';
 import Miniatura from '../../components/Miniatura.jsx';
 
@@ -51,6 +52,9 @@ export default function AdminLista() {
 
       {aviso && <p className={aviso.erro ? 'admin-erro admin-aviso' : 'admin-ok admin-aviso'}>{aviso.texto}</p>}
       {erro && <p className="admin-erro admin-aviso">{mensagemErro(erro)}</p>}
+
+      {/* Só no painel: o que foi atualizado por último (saiu da página dos corretores). */}
+      {!carregando && <div className="admin-recentes"><RecentesSection itens={atualizadosRecentemente(empreendimentos, RECENTES_LIMITE)} /></div>}
 
       {carregando ? (
         <p>Carregando…</p>

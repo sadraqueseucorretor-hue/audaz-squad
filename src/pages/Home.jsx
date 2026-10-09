@@ -6,14 +6,12 @@ import SearchBar from '../components/SearchBar.jsx';
 import FilterChips from '../components/FilterChips.jsx';
 import { ordenarPorEntrega } from '../utils/entrega.js';
 import EmpreendimentoCard from '../components/EmpreendimentoCard.jsx';
-import RecentesSection from '../components/RecentesSection.jsx';
 import Footer from '../components/Footer.jsx';
-import { STATUS, RECENTES_LIMITE } from '../data/config.js';
+import { STATUS } from '../data/config.js';
 import { useDados } from '../context/DadosContext.jsx';
 import {
   filtrarEmpreendimentos,
   opcoesUnicas,
-  atualizadosRecentemente,
 } from '../utils/empreendimentos.js';
 
 export default function Home() {
@@ -37,7 +35,6 @@ export default function Home() {
     const filtrados = filtrarEmpreendimentos(todos, { busca, status, cidade, construtora });
     return ordem ? ordenarPorEntrega(filtrados, ordem === 'entrega-desc') : filtrados;
   }, [todos, busca, status, cidade, construtora, ordem]);
-  const recentes = useMemo(() => atualizadosRecentemente(todos, RECENTES_LIMITE), [todos]);
   const filtrando = Boolean(busca || status || cidade || construtora);
 
   const opcoesStatus = Object.entries(STATUS)
@@ -85,7 +82,6 @@ export default function Home() {
           )}
         </div>
 
-        {!filtrando && !carregando && <RecentesSection itens={recentes} />}
 
         <section className="secao" aria-labelledby="catalogo-titulo">
           <div className="secao__head">

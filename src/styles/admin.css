@@ -516,3 +516,7 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
 }
 .ordenar select { height: 100%; border: 0; background: transparent; color: var(--azul); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; outline: none; padding-right: 6px; }
 .chips__label { width: 100px; } /* cabe "CONSTRUTORA" e mantém as linhas alinhadas */
+
+/* "Atualizados recentemente" no painel */
+.admin-recentes { margin-bottom: 22px; }
+.admin-recentes .secao { margin-top: 0; }
