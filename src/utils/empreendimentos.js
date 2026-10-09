@@ -24,11 +24,12 @@ export function opcoesUnicas(lista, campo) {
   return [...porChave.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
-export function filtrarEmpreendimentos(lista, { busca = '', status = '', cidade = '' }) {
+export function filtrarEmpreendimentos(lista, { busca = '', status = '', cidade = '', construtora = '' }) {
   const termo = normalizar(busca);
   return lista.filter((e) => {
     if (status && e.status !== status) return false;
     if (cidade && normalizar(e.cidade) !== normalizar(cidade)) return false;
+    if (construtora && normalizar(e.construtora) !== normalizar(construtora)) return false;
     if (!termo) return true;
     const alvo = normalizar(`${e.nome} ${e.bairro} ${e.cidade} ${e.construtora}`);
     return termo.split(/\s+/).every((parte) => alvo.includes(parte));

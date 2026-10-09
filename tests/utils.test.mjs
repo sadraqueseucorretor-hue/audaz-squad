@@ -169,3 +169,21 @@ test('Navegador de pasta: nome de exibição e tipo do arquivo', () => {
   assert.equal(tipoDoArquivo({ tipo: 'application/vnd.google-apps.spreadsheet' }), 'documento');
   assert.equal(tipoDoArquivo({ tipo: 'application/zip' }), 'outro');
 });
+
+import { chaveEntrega, ordenarPorEntrega } from '../src/utils/entrega.js';
+
+test('Entrega: entende formatos variados e ordena', () => {
+  assert.equal(chaveEntrega('31/01/2027'), 20270131);
+  assert.equal(chaveEntrega('31/06/2028'), 20280630); // dia inexistente → último dia do mês
+  assert.equal(chaveEntrega('31/09/2026'), 20260930);
+  assert.equal(chaveEntrega('JUNHO /2029'), 20290630);
+  assert.equal(chaveEntrega('janeiro 2027'), 20270131);
+  assert.equal(chaveEntrega('Jun/2028'), 20280630);
+  assert.equal(chaveEntrega('03/2027'), 20270331);
+  assert.equal(chaveEntrega('2028'), 20281231);
+  assert.equal(chaveEntrega(''), null);
+  assert.equal(chaveEntrega('a definir'), null);
+  const lista = [{ n: 'C', entrega: '' }, { n: 'B', entrega: 'JUNHO /2029' }, { n: 'A', entrega: '31/10/2026' }];
+  assert.deepEqual(ordenarPorEntrega(lista).map((e) => e.n), ['A', 'B', 'C']);
+  assert.deepEqual(ordenarPorEntrega(lista, true).map((e) => e.n), ['B', 'A', 'C']);
+});

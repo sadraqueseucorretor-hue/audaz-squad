@@ -507,3 +507,12 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   padding: 4px 10px; border-radius: 999px; background: rgba(1, 17, 38, 0.82); color: #fff; font-size: 12px; font-weight: 700;
 }
 .previa-pasta__selo .icon { color: #ffd27a; }
+
+/* Ordenação da lista de empreendimentos (inicial) */
+.secao__acoes { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.ordenar {
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 4px 0 12px; border: 1px solid var(--borda);
+  border-radius: 999px; background: var(--superficie); color: var(--vermelho);
+}
+.ordenar select { height: 100%; border: 0; background: transparent; color: var(--azul); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; outline: none; padding-right: 6px; }
+.chips__label { width: 100px; } /* cabe "CONSTRUTORA" e mantém as linhas alinhadas */

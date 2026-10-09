@@ -4,6 +4,7 @@ import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
 import SearchBar from '../components/SearchBar.jsx';
 import FilterChips from '../components/FilterChips.jsx';
+import { ordenarPorEntrega } from '../utils/entrega.js';
 import EmpreendimentoCard from '../components/EmpreendimentoCard.jsx';
 import RecentesSection from '../components/RecentesSection.jsx';
 import Footer from '../components/Footer.jsx';
@@ -21,6 +22,9 @@ export default function Home() {
   const busca = params.get('q') || '';
   const status = params.get('status') || '';
   const cidade = params.get('cidade') || '';
+  const construtora = params.get('construtora') || '';
+  // Ordem da lista: '' (definida no painel) | 'entrega' (mais próxima) | 'entrega-desc' (mais distante).
+  const ordem = params.get('ordem') || '';
 
   const atualizar = (chave, valor) => {
     const novo = new URLSearchParams(params);
@@ -29,14 +33,18 @@ export default function Home() {
   };
 
   const { empreendimentos: todos, site: SITE, carregando } = useDados();
-  const resultado = useMemo(() => filtrarEmpreendimentos(todos, { busca, status, cidade }), [todos, busca, status, cidade]);
+  const resultado = useMemo(() => {
+    const filtrados = filtrarEmpreendimentos(todos, { busca, status, cidade, construtora });
+    return ordem ? ordenarPorEntrega(filtrados, ordem === 'entrega-desc') : filtrados;
+  }, [todos, busca, status, cidade, construtora, ordem]);
   const recentes = useMemo(() => atualizadosRecentemente(todos, RECENTES_LIMITE), [todos]);
-  const filtrando = Boolean(busca || status || cidade);
+  const filtrando = Boolean(busca || status || cidade || construtora);
 
   const opcoesStatus = Object.entries(STATUS)
     .filter(([chave]) => todos.some((e) => e.status === chave))
     .map(([valor, { label }]) => ({ valor, label }));
   const opcoesCidade = opcoesUnicas(todos, 'cidade').map((c) => ({ valor: c, label: c }));
+  const opcoesConstrutora = opcoesUnicas(todos, 'construtora').map((c) => ({ valor: c, label: c }));
 
   return (
     <>
@@ -72,6 +80,9 @@ export default function Home() {
           {opcoesCidade.length > 1 && (
             <FilterChips rotulo="Cidade" opcoes={opcoesCidade} valor={cidade} onChange={(v) => atualizar('cidade', v)} rotuloTodos="Todas" />
           )}
+          {opcoesConstrutora.length > 1 && (
+            <FilterChips rotulo="Construtora" opcoes={opcoesConstrutora} valor={construtora} onChange={(v) => atualizar('construtora', v)} rotuloTodos="Todas" />
+          )}
         </div>
 
         {!filtrando && !carregando && <RecentesSection itens={recentes} />}
@@ -81,9 +92,20 @@ export default function Home() {
             <h2 id="catalogo-titulo" className="secao__titulo">
               {filtrando ? 'Resultados' : 'Todos os empreendimentos'}
             </h2>
-            <span className="secao__contador" aria-live="polite">
-              {resultado.length} {resultado.length === 1 ? 'empreendimento' : 'empreendimentos'}
-            </span>
+            <div className="secao__acoes">
+              <label className="ordenar">
+                <Icon name="clock" size={15} />
+                <span className="sr-only">Ordenar</span>
+                <select value={ordem} onChange={(e) => atualizar('ordem', e.target.value)} aria-label="Ordenar empreendimentos">
+                  <option value="">Ordem padrão</option>
+                  <option value="entrega">Entrega mais próxima</option>
+                  <option value="entrega-desc">Entrega mais distante</option>
+                </select>
+              </label>
+              <span className="secao__contador" aria-live="polite">
+                {resultado.length} {resultado.length === 1 ? 'empreendimento' : 'empreendimentos'}
+              </span>
+            </div>
           </div>
 
           {carregando ? (
