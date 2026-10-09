@@ -482,3 +482,28 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   .navegador__grade { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px; }
   .navegador__abrir span { display: none; }
 }
+
+/* Prévia de pasta do Drive no card do material */
+.previa-pasta { position: absolute; inset: 0; display: block; background: var(--azul-noite); }
+.previa-pasta--carregando, .previa-pasta--vazia { display: grid; place-items: center; color: rgba(255, 255, 255, 0.6); background: linear-gradient(135deg, var(--azul), var(--azul-noite)); }
+.previa-pasta__mosaico { position: absolute; inset: 0; display: grid; gap: 2px; }
+.previa-pasta__mosaico img { width: 100%; height: 100%; object-fit: cover; min-height: 0; }
+.previa-pasta__mosaico--2 { grid-template-columns: 1fr 1fr; }
+.previa-pasta__mosaico--3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; }
+.previa-pasta__mosaico--3 img:first-child { grid-row: span 2; }
+.previa-pasta__mosaico--4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.previa-pasta__blocos {
+  position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px 14px 40px; align-content: center;
+  background: radial-gradient(120% 90% at 100% 0%, rgba(242, 5, 48, 0.3), transparent 60%), linear-gradient(135deg, var(--azul), var(--azul-noite));
+}
+.previa-pasta__bloco {
+  display: flex; align-items: center; gap: 6px; min-width: 0; padding: 10px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1); color: #fff; font-size: 12px; font-weight: 700;
+}
+.previa-pasta__bloco span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.previa-pasta__bloco .icon { color: #ffd27a; flex-shrink: 0; }
+.previa-pasta__selo {
+  position: absolute; left: 10px; bottom: 10px; z-index: 1; display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 999px; background: rgba(1, 17, 38, 0.82); color: #fff; font-size: 12px; font-weight: 700;
+}
+.previa-pasta__selo .icon { color: #ffd27a; }

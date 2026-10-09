@@ -31,11 +31,15 @@ export default function Empreendimento() {
     [navigate, params, setParams]
   );
 
+  // Volta ao topo só ao TROCAR de empreendimento — não a cada atualização dos dados
+  // (o Firestore reenvia o empreendimento e a página pulava para cima no meio da leitura).
   useEffect(() => {
-    if (params.get('material')) return;
-    window.scrollTo(0, 0);
+    if (!params.get('material')) window.scrollTo(0, 0);
+  }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
     document.title = emp ? `${emp.nome} · ${SITE.marca}` : SITE.titulo;
-  }, [emp, SITE]);
+  }, [emp?.nome, SITE.marca, SITE.titulo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (carregando) return <main className="container nao-encontrado"><Logo /><p>Carregando…</p></main>;
 

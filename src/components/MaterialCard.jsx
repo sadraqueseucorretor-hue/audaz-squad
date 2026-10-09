@@ -3,6 +3,8 @@ import Icon from './Icon.jsx';
 import { formatarDataHora, ehRecente } from '../utils/format.js';
 import { analisarUrlMaterial, miniaturaDoMaterial, seloDoMaterial } from '../utils/materiais.js';
 import { urlImagem } from '../utils/drive.js';
+import { temChaveDrive } from '../utils/pastaDrive.js';
+import PreviaPasta from './PreviaPasta.jsx';
 
 // Pré-visualização do material, em ordem de preferência:
 // 1) imagem de capa cadastrada no admin; 2) miniatura gerada pelo Drive/YouTube;
@@ -15,6 +17,15 @@ function Previa({ material, icone }) {
   // Arquivos e pastas do Drive (a pasta aparece como grade de fotos) podem ser mostrados reduzidos.
   const podeEmbutir = analise.valido && analise.tipoOrigem === 'google_drive' && analise.drive.tipo !== 'formulario';
   const [etapa, setEtapa] = useState(miniatura ? 'imagem' : podeEmbutir ? 'pagina' : 'icone');
+
+  // Pasta do Drive (sem capa definida): mosaico com as fotos de dentro, em vez da grade do Google.
+  if (!capa && analise.valido && analise.drive?.tipo === 'pasta' && temChaveDrive()) {
+    return (
+      <span className="material__previa" aria-hidden="true">
+        <PreviaPasta pastaId={analise.drive.id} />
+      </span>
+    );
+  }
 
   if (etapa === 'imagem') {
     return (
