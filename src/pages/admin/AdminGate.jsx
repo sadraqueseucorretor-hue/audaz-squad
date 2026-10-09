@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { onAuthStateChanged, signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth, ehAdmin, firebaseAtivo } from '../../firebase.js';
+import { useDados } from '../../context/DadosContext.jsx';
 import Logo from '../../components/Logo.jsx';
 
 // Porta de entrada do /admin: login com Firebase Auth e checagem do e-mail admin.
@@ -9,6 +10,12 @@ export default function AdminGate() {
   const [usuario, setUsuario] = useState(undefined);
 
   useEffect(() => (firebaseAtivo ? onAuthStateChanged(auth, setUsuario) : undefined), []);
+
+  // No painel, a lista acompanha as alterações em tempo real.
+  const { ativarTempoReal } = useDados();
+  useEffect(() => {
+    ativarTempoReal();
+  }, [ativarTempoReal]);
 
   if (!firebaseAtivo) {
     return (

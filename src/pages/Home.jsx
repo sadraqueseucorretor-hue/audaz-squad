@@ -88,7 +88,7 @@ export default function Home() {
   // carregar (ex.: foto restrita no Drive), tenta a próxima.
   const fotosTopo = todos.map((e) => e.banner || fotosDo(e)[0]).filter(Boolean);
   const [falhasTopo, setFalhasTopo] = useState(0);
-  const fotoTopo = fotosTopo[falhasTopo] ? urlImagem(fotosTopo[falhasTopo], 1920) : null;
+  const fotoTopo = fotosTopo[falhasTopo] ? urlImagem(fotosTopo[falhasTopo], 1600) : null;
   // "GRUPO DIRECIONAL" já tem a palavra Grupo; "Direcional" ganha o prefixo.
   const temGrupo = /^grupo\b/i.test((SITE.parceiro || '').trim());
   const nomeGrupo = temGrupo ? SITE.parceiro.trim() : `Grupo ${SITE.parceiro}`;

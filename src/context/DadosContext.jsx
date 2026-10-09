@@ -1,17 +1,20 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { collection, doc, onSnapshot } from 'firebase/firestore';
-import { db, firebaseAtivo } from '../firebase.js';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { FIREBASE_CONFIG } from '../data/firebaseConfig.js';
 import { empreendimentos as exemplos } from '../data/empreendimentos.js';
 import { SITE } from '../data/config.js';
 import { ordenar } from '../utils/empreendimentos.js';
+import { carregarEmpreendimentos, carregarSite } from '../services/publico.js';
 
-// Fonte única dos dados do site. Com Firebase configurado, escuta o Firestore em tempo real:
-// o que o admin salva aparece na hora para todos os corretores, sem publicar nada.
+// Fonte única dos dados do site.
+// - Corretores: leitura leve pela API REST (sem a biblioteca do Firebase), ao abrir a página e
+//   ao voltar para a aba. A última versão fica no navegador: ao recarregar, tudo aparece na hora.
+// - Painel admin: chama `ativarTempoReal()` e passa a escutar o Firestore em tempo real
+//   (a biblioteca do Firebase só é baixada nesse momento).
 const DadosContext = createContext(null);
 
-// Guarda a última versão recebida no navegador: ao recarregar, logo e empreendimentos aparecem
-// na hora (sem piscar o logotipo padrão) e o Firestore atualiza por cima em seguida.
+const firebaseAtivo = Boolean(FIREBASE_CONFIG.apiKey);
 const CHAVE_CACHE = 'audaz-dados-v1';
+const INTERVALO_MINIMO_MS = 30_000; // ao voltar para a aba, no máximo 1 nova leitura a cada 30 s
 
 function lerCache() {
   try {
@@ -41,34 +44,61 @@ export function DadosProvider({ children }) {
       erro: null,
     };
   });
+  const tempoReal = useRef(false);
+  const ultimaLeitura = useRef(0);
+
+  const aplicarSite = useCallback((site) => {
+    setEstado((s) => ({ ...s, site: { ...SITE, ...site }, siteCarregado: true }));
+    gravarCache({ site });
+  }, []);
+  const aplicarLista = useCallback((lista) => {
+    const ordenada = ordenar(lista);
+    setEstado((s) => ({ ...s, empreendimentos: ordenada, carregando: false, erro: null }));
+    gravarCache({ empreendimentos: ordenada });
+  }, []);
+
+  const recarregar = useCallback(async () => {
+    if (!firebaseAtivo || tempoReal.current) return;
+    ultimaLeitura.current = Date.now();
+    try {
+      const [site, lista] = await Promise.all([carregarSite(), carregarEmpreendimentos()]);
+      if (tempoReal.current) return;
+      aplicarSite(site);
+      aplicarLista(lista);
+    } catch (erro) {
+      setEstado((s) => ({ ...s, carregando: false, siteCarregado: true, erro }));
+    }
+  }, [aplicarSite, aplicarLista]);
 
   useEffect(() => {
-    if (!firebaseAtivo) return undefined;
+    recarregar();
+    const aoVoltar = () => {
+      if (document.visibilityState === 'visible' && Date.now() - ultimaLeitura.current > INTERVALO_MINIMO_MS) recarregar();
+    };
+    document.addEventListener('visibilitychange', aoVoltar);
+    return () => document.removeEventListener('visibilitychange', aoVoltar);
+  }, [recarregar]);
+
+  // Painel admin: escuta em tempo real (o que for salvo aparece na hora na lista do painel).
+  const pararTempoReal = useRef(null);
+  const ativarTempoReal = useCallback(async () => {
+    if (!firebaseAtivo || tempoReal.current) return;
+    tempoReal.current = true;
+    const [{ collection, doc, onSnapshot }, { db }] = await Promise.all([import('firebase/firestore'), import('../firebase.js')]);
     const pararEmp = onSnapshot(
       collection(db, 'empreendimentos'),
-      (snap) => {
-        const lista = ordenar(snap.docs.map((d) => ({ ...d.data(), slug: d.id })));
-        setEstado((s) => ({ ...s, empreendimentos: lista, carregando: false, erro: null }));
-        gravarCache({ empreendimentos: lista });
-      },
+      (snap) => aplicarLista(snap.docs.map((d) => ({ ...d.data(), slug: d.id }))),
       (erro) => setEstado((s) => ({ ...s, carregando: false, erro }))
     );
-    const pararSite = onSnapshot(
-      doc(db, 'config', 'site'),
-      (snap) => {
-        const site = snap.data() || {};
-        setEstado((s) => ({ ...s, site: { ...SITE, ...site }, siteCarregado: true }));
-        gravarCache({ site });
-      },
-      () => setEstado((s) => ({ ...s, siteCarregado: true }))
-    );
-    return () => {
+    const pararSite = onSnapshot(doc(db, 'config', 'site'), (snap) => aplicarSite(snap.data() || {}));
+    pararTempoReal.current = () => {
       pararEmp();
       pararSite();
     };
-  }, []);
+  }, [aplicarLista, aplicarSite]);
+  useEffect(() => () => pararTempoReal.current?.(), []);
 
-  return <DadosContext.Provider value={estado}>{children}</DadosContext.Provider>;
+  return <DadosContext.Provider value={{ ...estado, recarregar, ativarTempoReal }}>{children}</DadosContext.Provider>;
 }
 
 export const useDados = () => useContext(DadosContext);

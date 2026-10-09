@@ -654,3 +654,8 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   .emp-card--lista { flex-direction: column; }
   .emp-card--lista .emp-card__media { flex-basis: auto; aspect-ratio: 16 / 10; min-height: 0; }
 }
+
+/* Tela de espera enquanto uma página carregada sob demanda é baixada */
+.carregando-pagina { min-height: 60vh; display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--texto-suave); }
+.carregando-pagina .visor__spinner { border-color: rgba(2, 29, 64, 0.15); border-top-color: var(--vermelho); }
+.carrossel__vazio { display: block; width: 100%; height: 100%; background: var(--azul); }

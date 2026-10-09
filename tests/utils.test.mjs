@@ -187,3 +187,22 @@ test('Entrega: entende formatos variados e ordena', () => {
   assert.deepEqual(ordenarPorEntrega(lista).map((e) => e.n), ['A', 'B', 'C']);
   assert.deepEqual(ordenarPorEntrega(lista, true).map((e) => e.n), ['B', 'A', 'C']);
 });
+
+import { camposFirestore } from '../src/services/publico.js';
+
+test('Leitura pública: converte o formato do Firestore REST em valores comuns', () => {
+  const campos = camposFirestore({
+    nome: { stringValue: 'Nature Arbo' },
+    ordem: { integerValue: '3' },
+    preco: { doubleValue: 1.5 },
+    ativo: { booleanValue: true },
+    logo: { nullValue: null },
+    fotos: { arrayValue: { values: [{ stringValue: 'a' }, { stringValue: 'b' }] } },
+    vazio: { arrayValue: {} },
+    materiaisLista: { arrayValue: { values: [{ mapValue: { fields: { titulo: { stringValue: 'BOOK' }, ativo: { booleanValue: false } } } }] } },
+  });
+  assert.deepEqual(campos, {
+    nome: 'Nature Arbo', ordem: 3, preco: 1.5, ativo: true, logo: null, fotos: ['a', 'b'], vazio: [],
+    materiaisLista: [{ titulo: 'BOOK', ativo: false }],
+  });
+});
