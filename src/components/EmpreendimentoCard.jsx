@@ -21,6 +21,11 @@ export default function EmpreendimentoCard({ emp, prioridade = false }) {
         <p className="emp-card__local">
           <Icon name="pin" size={15} /> {emp.bairro} · {emp.cidade}/{emp.uf}
         </p>
+        {emp.entrega?.trim() && (
+          <p className="emp-card__entrega">
+            <Icon name="key" size={15} /> Entrega: <strong>{emp.entrega.trim()}</strong>
+          </p>
+        )}
 
         <Link to={url} className="btn btn--primary btn--block emp-card__botao">
           Acessar Materiais <Icon name="arrowRight" size={18} />

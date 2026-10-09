@@ -425,3 +425,8 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   .tabelas-split__visor-topo { padding: 8px var(--gutter); }
   .tabelas-split__visor-topo strong { font-size: 15px; }
 }
+
+/* Data de entrega no card da inicial */
+.emp-card__entrega { display: flex; align-items: center; gap: 5px; margin: -10px 0 16px; font-size: 14px; color: var(--texto-suave); }
+.emp-card__entrega strong { color: var(--azul); font-weight: 700; }
+.emp-card__entrega .icon { color: var(--vermelho); }
