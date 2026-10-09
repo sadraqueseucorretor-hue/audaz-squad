@@ -30,7 +30,7 @@ export default function EmpreendimentoCard({ emp, prioridade = false, emLista = 
         </h3>
         <p className="emp-card__local">
           {emp.construtora && <span className="emp-card__construtora">{emp.construtora}</span>}
-          {emp.construtora && local && <span aria-hidden="true">•</span>}
+          {emp.construtora && local && <span className="emp-card__ponto" aria-hidden="true">•</span>}
           {local && <span><Icon name="pin" size={15} /> {local}</span>}
         </p>
         {emp.entrega?.trim() && (
@@ -41,10 +41,10 @@ export default function EmpreendimentoCard({ emp, prioridade = false, emLista = 
 
         <div className="emp-card__botoes">
           <Link to={`${url}?ir=materiais`} className="btn btn--ghost emp-card__btn">
-            <Icon name="folder" size={17} /> Ver materiais
+            <Icon name="folder" size={17} /> <span className="rotulo-longo">Ver materiais</span><span className="rotulo-curto">Materiais</span>
           </Link>
           <Link to={url} className="btn btn--primary emp-card__btn">
-            Ver empreendimento <Icon name="arrowRight" size={17} />
+            <span className="rotulo-longo">Ver empreendimento</span><span className="rotulo-curto">Abrir</span> <Icon name="arrowRight" size={17} />
           </Link>
         </div>
       </div>

@@ -147,3 +147,20 @@ export function mesDasTabelas(arquivos) {
   const ano = arquivos.map((a) => a.nome.match(/20\d\d/)?.[0]).find(Boolean);
   return `${mes.charAt(0).toUpperCase()}${mes.slice(1)}${ano ? ` ${ano}` : ''}`;
 }
+
+// O arquivo do Drive está compartilhado como "Qualquer pessoa com o link"? Pela API do Drive (com a
+// chave do navegador) um arquivo restrito responde 404. Resposta: true | false | null (não deu para saber).
+const CACHE_PUBLICO = new Map();
+export function arquivoEhPublico(id) {
+  if (!temChaveDrive() || !id) return Promise.resolve(null);
+  if (!CACHE_PUBLICO.has(id)) {
+    const params = new URLSearchParams({ fields: 'id', supportsAllDrives: 'true', key: GOOGLE_DRIVE_API_KEY });
+    CACHE_PUBLICO.set(
+      id,
+      fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?${params}`)
+        .then((r) => (r.ok ? true : r.status === 404 ? false : null))
+        .catch(() => null)
+    );
+  }
+  return CACHE_PUBLICO.get(id);
+}

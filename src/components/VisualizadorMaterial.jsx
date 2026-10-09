@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
 import { categoriaPorChave } from '../data/tiposMateriais.js';
 import { analisarUrlMaterial } from '../utils/materiais.js';
-import { temChaveDrive } from '../utils/pastaDrive.js';
+import { arquivoEhPublico, temChaveDrive } from '../utils/pastaDrive.js';
 import NavegadorPasta from './NavegadorPasta.jsx';
 
 // Quanto esperar o conteúdo incorporado carregar antes de oferecer as alternativas.
@@ -44,6 +44,16 @@ export default function VisualizadorMaterial({ material, contexto, onFechar }) {
     return () => clearTimeout(t);
   }, [material.urlOriginal, analise.valido, analise.modo, ehPasta]);
 
+  // Arquivo do Drive restrito: em vez da tela de login do Google, explica o que fazer.
+  const idDrive = analise.valido && analise.tipoOrigem === 'google_drive' && !ehPasta ? analise.drive?.id : null;
+  const [restrito, setRestrito] = useState(false);
+  useEffect(() => {
+    if (!idDrive) return undefined;
+    let ativo = true;
+    arquivoEhPublico(idDrive).then((publico) => ativo && setRestrito(publico === false));
+    return () => { ativo = false; };
+  }, [idDrive]);
+
   const urlOriginal = analise.valido ? analise.urlOriginal : null;
   const urlNovaAba = analise.valido ? (analise.modo === 'externo' ? analise.urlOriginal : analise.urlPreview) : null;
   const ehDrive = analise.valido && analise.tipoOrigem === 'google_drive';
@@ -72,6 +82,13 @@ export default function VisualizadorMaterial({ material, contexto, onFechar }) {
     conteudo = (
       <Aviso titulo="Material indisponível">
         O link cadastrado para este material não é válido. Avise o administrador para corrigir.
+      </Aviso>
+    );
+  } else if (restrito) {
+    conteudo = (
+      <Aviso titulo="Arquivo sem acesso público" acoes={botoes}>
+        Este arquivo no Google Drive não está compartilhado como “Qualquer pessoa com o link”, por isso não abre aqui.
+        Se você tem acesso, use o botão abaixo; senão, avise o administrador.
       </Aviso>
     );
   } else if (analise.modo === 'externo' || estado === 'falhou') {
@@ -144,14 +161,17 @@ export default function VisualizadorMaterial({ material, contexto, onFechar }) {
 
         <div className="visor__conteudo">{conteudo}</div>
 
+        {/* Quando o aviso já mostra os botões, o rodapé não repete. */}
+        {!(restrito || !analise.valido || analise.modo === 'externo' || estado === 'falhou') && (
         <footer className="visor__rodape">
-          {ehDrive && (
+          {ehDrive && !restrito && (
             <p className="visor__dica">
               <Icon name="info" size={15} /> Se aparecer “Você precisa de acesso”, o arquivo no Drive precisa estar compartilhado como “Qualquer pessoa com o link”.
             </p>
           )}
           <div className="visor__acoes">{botoes}</div>
         </footer>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
@@ -56,10 +56,13 @@ export default function Home() {
     }
   });
 
+  // Forma funcional: a busca (com pausa) não apaga um filtro escolhido nesse meio-tempo.
   const atualizar = (chave, valor) => {
-    const novo = new URLSearchParams(params);
-    valor ? novo.set(chave, valor) : novo.delete(chave);
-    setParams(novo, { replace: true });
+    setParams((atual) => {
+      const novo = new URLSearchParams(atual);
+      valor ? novo.set(chave, valor) : novo.delete(chave);
+      return novo;
+    }, { replace: true });
   };
   const trocarVista = (emLista) => {
     setLista(emLista);
@@ -81,6 +84,36 @@ export default function Home() {
   // No celular os filtros ficam recolhidos atrás de um botão (mostra quantos estão ativos).
   const filtrosAtivos = [status, cidade, construtora, ano, ordem].filter(Boolean).length;
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  // Celular: os filtros abrem como painel deslizante por cima da página — a página atrás não rola.
+  useEffect(() => {
+    if (!filtrosAbertos || !window.matchMedia('(max-width: 640px)').matches) return undefined;
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const aoTeclar = (e) => e.key === 'Escape' && setFiltrosAbertos(false);
+    window.addEventListener('keydown', aoTeclar);
+    return () => {
+      document.body.style.overflow = anterior;
+      window.removeEventListener('keydown', aoTeclar);
+    };
+  }, [filtrosAbertos]);
+
+  // Busca enquanto digita (pequena pausa para não refiltrar a cada letra).
+  useEffect(() => {
+    if (textoBusca.trim() === busca) return undefined;
+    const t = setTimeout(() => atualizar('q', textoBusca.trim()), 250);
+    return () => clearTimeout(t);
+  }, [textoBusca]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Celular: quando a busca do topo sai da tela, aparece uma barra fixa com busca e filtros.
+  const buscaTopo = useRef(null);
+  const [barraFixa, setBarraFixa] = useState(false);
+  useEffect(() => {
+    const alvo = buscaTopo.current;
+    if (!alvo || !('IntersectionObserver' in window)) return undefined;
+    const obs = new IntersectionObserver(([e]) => setBarraFixa(!e.isIntersecting && e.boundingClientRect.top < 0));
+    obs.observe(alvo);
+    return () => obs.disconnect();
+  }, []);
   const selosUsados = Object.entries(SELOS).filter(([chave]) => todos.some((e) => selosDo(e).includes(chave)));
 
   const construtoras = opcoesUnicas(todos, 'construtora');
@@ -107,8 +140,20 @@ export default function Home() {
   const buscar = (e) => {
     e.preventDefault();
     atualizar('q', textoBusca.trim());
+    e.currentTarget.querySelector('input')?.blur(); // fecha o teclado do celular
     document.getElementById('empreendimentos')?.scrollIntoView({ behavior: 'smooth' });
   };
+  const limparTudo = () => { setTextoBusca(''); setParams({}, { replace: true }); };
+  const campoBusca = (placeholder) => (
+    <input
+      type="search"
+      value={textoBusca}
+      onChange={(e) => setTextoBusca(e.target.value)}
+      placeholder={placeholder}
+      aria-label="Buscar empreendimentos"
+      enterKeyHint="search"
+    />
+  );
 
   return (
     <>
@@ -162,18 +207,9 @@ export default function Home() {
             ))}
           </p>
           <p className="inicio-heroi__sub">{SITE.subtitulo}</p>
-          <form className="inicio-busca" onSubmit={buscar} role="search">
+          <form className="inicio-busca" onSubmit={buscar} role="search" ref={buscaTopo}>
             <Icon name="search" size={20} />
-            <input
-              type="search"
-              value={textoBusca}
-              onChange={(e) => {
-                setTextoBusca(e.target.value);
-                if (!e.target.value) atualizar('q', '');
-              }}
-              placeholder="Nome, bairro, construtora, status…"
-              aria-label="Buscar empreendimentos"
-            />
+            {campoBusca('Nome, bairro, construtora, status…')}
             <button type="submit">Buscar</button>
           </form>
         </div>
@@ -210,7 +246,12 @@ export default function Home() {
           {filtrosAtivos > 0 && <b>{filtrosAtivos}</b>}
           <Icon name="arrowRight" size={16} className="inicio-filtros-botao__seta" />
         </button>
-        <div className={`inicio-filtros ${filtrosAbertos ? 'aberto' : ''}`} id="inicio-filtros">
+        {filtrosAbertos && <div className="inicio-filtros-fundo" onClick={() => setFiltrosAbertos(false)} aria-hidden="true" />}
+        <div className={`inicio-filtros ${filtrosAbertos ? 'aberto' : ''}`} id="inicio-filtros" role="group" aria-label="Filtros">
+          <div className="inicio-filtros__topo">
+            <strong>Filtros e ordem</strong>
+            <button type="button" className="btn-icone" onClick={() => setFiltrosAbertos(false)} aria-label="Fechar filtros"><Icon name="close" size={20} /></button>
+          </div>
           <Filtro icone="pin" rotulo="Cidade" valor={cidade} onChange={(v) => atualizar('cidade', v)} opcoes={cidades.map((c) => ({ valor: c, label: c }))} todos="Todas" />
           <Filtro icone="building" rotulo="Construtora" valor={construtora} onChange={(v) => atualizar('construtora', v)} opcoes={construtoras.map((c) => ({ valor: c, label: c }))} todos="Todas" />
           <Filtro icone="tag" rotulo="Status" valor={status} onChange={(v) => atualizar('status', v)} opcoes={opcoesStatus} />
@@ -224,6 +265,12 @@ export default function Home() {
             todos="Ordem padrão"
             opcoes={[{ valor: 'entrega', label: 'Entrega mais próxima' }, { valor: 'entrega-desc', label: 'Entrega mais distante' }]}
           />
+          <div className="inicio-filtros__rodape">
+            <button type="button" className="btn btn--ghost" onClick={limparTudo} disabled={!filtrando && !ordem}>Limpar</button>
+            <button type="button" className="btn btn--primary" onClick={() => { setFiltrosAbertos(false); document.getElementById('empreendimentos')?.scrollIntoView(); }}>
+              Ver {resultado.length} {resultado.length === 1 ? 'empreendimento' : 'empreendimentos'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -235,7 +282,7 @@ export default function Home() {
               {resultado.length} {resultado.length === 1 ? 'empreendimento encontrado' : 'empreendimentos encontrados'}
             </span>
             {filtrando && (
-              <button type="button" className="inicio-limpar" onClick={() => { setTextoBusca(''); setParams({}, { replace: true }); }}>
+              <button type="button" className="inicio-limpar" onClick={limparTudo}>
                 Limpar filtros
               </button>
             )}
@@ -275,7 +322,7 @@ export default function Home() {
           <div className="vazio">
             <p>{filtrando ? 'Nenhum empreendimento encontrado para essa busca.' : 'Nenhum empreendimento publicado ainda.'}</p>
             {filtrando && (
-              <button type="button" className="btn btn--ghost" onClick={() => { setTextoBusca(''); setParams({}, { replace: true }); }}>
+              <button type="button" className="btn btn--ghost" onClick={limparTudo}>
                 Limpar busca e filtros
               </button>
             )}
@@ -284,6 +331,18 @@ export default function Home() {
       </main>
 
       <Footer />
+
+      {/* Celular: busca e filtros sempre à mão depois de rolar a página */}
+      <form className={`inicio-barra ${barraFixa && !filtrosAbertos ? 'visivel' : ''}`} onSubmit={buscar} role="search" aria-hidden={!barraFixa}>
+        <label className="inicio-barra__busca">
+          <Icon name="search" size={18} />
+          {campoBusca('Buscar empreendimento…')}
+        </label>
+        <button type="button" className="inicio-barra__filtros" onClick={() => setFiltrosAbertos(true)} aria-label="Filtros e ordem">
+          <Icon name="sliders" size={19} />
+          {filtrosAtivos > 0 && <b>{filtrosAtivos}</b>}
+        </button>
+      </form>
     </>
   );
 }
