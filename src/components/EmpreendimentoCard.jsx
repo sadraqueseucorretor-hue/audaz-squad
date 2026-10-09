@@ -4,22 +4,24 @@ import StatusBadge from './StatusBadge.jsx';
 import Icon from './Icon.jsx';
 import { fotosDo } from '../utils/empreendimentos.js';
 
-export default function EmpreendimentoCard({ emp, prioridade = false }) {
+export default function EmpreendimentoCard({ emp, prioridade = false, emLista = false }) {
   const url = `/empreendimento/${emp.slug}`;
+  const local = [emp.bairro, emp.cidade].filter(Boolean).join(' · ');
   return (
-    <article className="emp-card">
+    <article className={`emp-card ${emLista ? 'emp-card--lista' : ''}`}>
       <div className="emp-card__media">
         <Carrossel fotos={fotosDo(emp)} alt={emp.nome} href={url} eager={prioridade} />
         <StatusBadge status={emp.status} className="emp-card__status" />
       </div>
 
       <div className="emp-card__body">
-        <p className="emp-card__construtora">{emp.construtora}</p>
         <h3 className="emp-card__nome">
           <Link to={url}>{emp.nome}</Link>
         </h3>
         <p className="emp-card__local">
-          <Icon name="pin" size={15} /> {emp.bairro} · {emp.cidade}/{emp.uf}
+          {emp.construtora && <span className="emp-card__construtora">{emp.construtora}</span>}
+          {emp.construtora && local && <span aria-hidden="true">•</span>}
+          {local && <span><Icon name="pin" size={15} /> {local}</span>}
         </p>
         {emp.entrega?.trim() && (
           <p className="emp-card__entrega">
@@ -27,9 +29,14 @@ export default function EmpreendimentoCard({ emp, prioridade = false }) {
           </p>
         )}
 
-        <Link to={url} className="btn btn--primary btn--block emp-card__botao">
-          Acessar Materiais <Icon name="arrowRight" size={18} />
-        </Link>
+        <div className="emp-card__botoes">
+          <Link to={`${url}?ir=materiais`} className="btn btn--ghost emp-card__btn">
+            <Icon name="folder" size={17} /> Ver materiais
+          </Link>
+          <Link to={url} className="btn btn--primary emp-card__btn">
+            Ver empreendimento <Icon name="arrowRight" size={17} />
+          </Link>
+        </div>
       </div>
     </article>
   );

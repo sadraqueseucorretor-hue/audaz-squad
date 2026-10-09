@@ -37,6 +37,14 @@ export default function Empreendimento() {
     if (!params.get('material')) window.scrollTo(0, 0);
   }, [slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // "Ver materiais" no card da inicial: abre a página já na seção de materiais.
+  const irPara = params.get('ir');
+  useEffect(() => {
+    if (irPara !== 'materiais' || !emp) return;
+    const t = setTimeout(() => document.getElementById('materiais')?.scrollIntoView({ behavior: 'smooth' }), 150);
+    return () => clearTimeout(t);
+  }, [irPara, Boolean(emp)]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     document.title = emp ? `${emp.nome} · ${SITE.marca}` : SITE.titulo;
   }, [emp?.nome, SITE.marca, SITE.titulo]); // eslint-disable-line react-hooks/exhaustive-deps

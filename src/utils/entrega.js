@@ -39,3 +39,9 @@ export function ordenarPorEntrega(lista, decrescente = false) {
     return decrescente ? y - x : x - y;
   });
 }
+
+/** Ano da entrega (para o filtro "Ano de entrega"), ou null. */
+export const anoEntrega = (texto) => {
+  const c = chaveEntrega(texto);
+  return c ? Math.floor(c / 10000) : null;
+};

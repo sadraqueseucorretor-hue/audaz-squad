@@ -2,6 +2,7 @@
 // Funções puras: recebem a lista (vinda do Firestore ou dos dados de exemplo) por parâmetro.
 import { categoriaPorChave } from '../data/tiposMateriais.js';
 import { listarMateriais } from './materiais.js';
+import { anoEntrega } from './entrega.js';
 import { normalizar } from './format.js';
 
 // Ordem definida pelo admin (campo `ordem`); sem ordem, vai para o fim em ordem alfabética.
@@ -24,12 +25,13 @@ export function opcoesUnicas(lista, campo) {
   return [...porChave.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
-export function filtrarEmpreendimentos(lista, { busca = '', status = '', cidade = '', construtora = '' }) {
+export function filtrarEmpreendimentos(lista, { busca = '', status = '', cidade = '', construtora = '', ano = '' }) {
   const termo = normalizar(busca);
   return lista.filter((e) => {
     if (status && e.status !== status) return false;
     if (cidade && normalizar(e.cidade) !== normalizar(cidade)) return false;
     if (construtora && normalizar(e.construtora) !== normalizar(construtora)) return false;
+    if (ano && String(anoEntrega(e.entrega)) !== String(ano)) return false;
     if (!termo) return true;
     const alvo = normalizar(`${e.nome} ${e.bairro} ${e.cidade} ${e.construtora}`);
     return termo.split(/\s+/).every((parte) => alvo.includes(parte));
