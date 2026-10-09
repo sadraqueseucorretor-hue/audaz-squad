@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
 import { categoriaPorChave } from '../data/tiposMateriais.js';
 import { analisarUrlMaterial } from '../utils/materiais.js';
+import { temChaveDrive } from '../utils/pastaDrive.js';
+import NavegadorPasta from './NavegadorPasta.jsx';
 
 // Quanto esperar o conteúdo incorporado carregar antes de oferecer as alternativas.
 const TEMPO_LIMITE_MS = 20000;
@@ -15,6 +17,8 @@ const TEMPO_LIMITE_MS = 20000;
 export default function VisualizadorMaterial({ material, contexto, onFechar }) {
   const analise = analisarUrlMaterial(material.urlOriginal);
   const categoria = categoriaPorChave(material.categoria);
+  // Pasta do Drive: navegador próprio (pastas, arquivos e visualização grande), em vez da grade do Google.
+  const ehPasta = analise.valido && analise.tipoOrigem === 'google_drive' && analise.drive.tipo === 'pasta' && temChaveDrive();
   const [estado, setEstado] = useState('carregando'); // carregando | pronto | demorou | falhou
   const botaoFechar = useRef(null);
 
@@ -35,10 +39,10 @@ export default function VisualizadorMaterial({ material, contexto, onFechar }) {
 
   // O componente é recriado a cada material (key no pai), então o estado já nasce "carregando".
   useEffect(() => {
-    if (!analise.valido || analise.modo === 'externo') return undefined;
+    if (!analise.valido || analise.modo === 'externo' || ehPasta) return undefined;
     const t = setTimeout(() => setEstado((e) => (e === 'carregando' ? 'demorou' : e)), TEMPO_LIMITE_MS);
     return () => clearTimeout(t);
-  }, [material.urlOriginal, analise.valido, analise.modo]);
+  }, [material.urlOriginal, analise.valido, analise.modo, ehPasta]);
 
   const urlOriginal = analise.valido ? analise.urlOriginal : null;
   const urlNovaAba = analise.valido ? (analise.modo === 'externo' ? analise.urlOriginal : analise.urlPreview) : null;
@@ -62,7 +66,9 @@ export default function VisualizadorMaterial({ material, contexto, onFechar }) {
   );
 
   let conteudo;
-  if (!analise.valido) {
+  if (ehPasta) {
+    conteudo = <NavegadorPasta pastaId={analise.drive.id} nomeRaiz={material.titulo || 'Pasta'} />;
+  } else if (!analise.valido) {
     conteudo = (
       <Aviso titulo="Material indisponível">
         O link cadastrado para este material não é válido. Avise o administrador para corrigir.

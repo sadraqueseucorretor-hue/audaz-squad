@@ -156,3 +156,16 @@ test('Pasta de tabelas: nome do empreendimento sem mês/versão e mês do títul
   assert.equal(mesDasTabelas(Object.keys(casos).map((nome) => ({ nome }))), 'Setembro 2026');
   assert.equal(mesDasTabelas([{ nome: 'Tabela geral.pdf' }]), '');
 });
+
+import { nomeDeExibicao, tipoDoArquivo } from '../src/utils/pastaDrive.js';
+
+test('Navegador de pasta: nome de exibição e tipo do arquivo', () => {
+  assert.equal(nomeDeExibicao('01 - Abril - Vista aérea_7a5bb693-d43c-4f13-a0f6-c0706ca0604e.jpg'), '01 - Abril - Vista aérea');
+  assert.equal(nomeDeExibicao('Mapa de vaga Lúmina (1).pdf'), 'Mapa de vaga Lúmina (1)');
+  assert.equal(nomeDeExibicao('Logo -'), 'Logo');
+  assert.equal(tipoDoArquivo({ tipo: 'image/jpeg' }), 'imagem');
+  assert.equal(tipoDoArquivo({ tipo: 'video/mp4' }), 'video');
+  assert.equal(tipoDoArquivo({ tipo: 'application/pdf' }), 'pdf');
+  assert.equal(tipoDoArquivo({ tipo: 'application/vnd.google-apps.spreadsheet' }), 'documento');
+  assert.equal(tipoDoArquivo({ tipo: 'application/zip' }), 'outro');
+});
