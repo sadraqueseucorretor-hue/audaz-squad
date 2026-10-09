@@ -818,10 +818,7 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   .visor__rodape .visor__acoes { flex-wrap: nowrap; }
   .visor__rodape .visor__botao { min-width: 0; padding: 0 10px; font-size: 13px; }
 }
-.rotulo-curto { display: none; }
 @media (max-width: 640px) {
-  .emp-card--lista .rotulo-longo { display: none; }
-  .emp-card--lista .rotulo-curto { display: inline; }
   .emp-card--lista .emp-card__btn .icon { display: inline-block; width: 14px; height: 14px; }
   .emp-card--lista .emp-card__btn { gap: 4px; }
   /* Construtora numa linha e bairro/cidade na outra: sem "•" sobrando no fim da linha */
