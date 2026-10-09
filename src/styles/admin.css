@@ -841,3 +841,13 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   .banner__titulo { font-size: clamp(26px, 8vw, 34px); }
 }
 .inicio-nav__logo-grupo--vazio { display: block; width: 140px; }
+
+/* Card: um único botão "Ver empreendimento" ocupando a largura toda; construtora numa linha e
+   bairro/cidade na seguinte (sem "•" sobrando quando o texto quebra). */
+.emp-card__botoes, .emp-card--lista .emp-card__botoes { grid-template-columns: 1fr; }
+@container (min-width: 330px) { .emp-card__botoes { grid-template-columns: 1fr; } }
+@container (max-width: 400px) { .emp-card__botoes { grid-template-columns: 1fr; } .emp-card__btn.btn--primary .icon { display: inline-block; } }
+.emp-card__btn { justify-content: center; }
+.emp-card__local { row-gap: 2px; }
+.emp-card__local .emp-card__construtora { width: 100%; }
+.emp-card__local > span:last-child { min-width: 0; }
