@@ -4,7 +4,8 @@ import VisualizadorMaterial from '../../components/VisualizadorMaterial.jsx';
 import { CATEGORIAS_MATERIAL } from '../../data/tiposMateriais.js';
 import { formatarDataHora } from '../../utils/format.js';
 import { analisarUrlMaterial } from '../../utils/materiais.js';
-import CampoLinkFoto from './CampoLinkFoto.jsx';
+import CampoLinkFoto, { AvisoRestrito } from './CampoLinkFoto.jsx';
+import useAcessoDrive from '../../utils/useAcessoDrive.js';
 
 const novoId = () => (crypto.randomUUID ? crypto.randomUUID() : `m-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
@@ -12,6 +13,9 @@ export const novoMaterial = () => ({ id: novoId(), titulo: '', categoria: 'book'
 
 /** Explica ao admin o que o sistema entendeu do link digitado. */
 function StatusDoLink({ url }) {
+  const analise = url.trim() ? analisarUrlMaterial(url) : null;
+  const acesso = useAcessoDrive(analise?.valido && analise.tipoOrigem === 'google_drive' ? analise.drive.id : null);
+  if (acesso === false) return <AvisoRestrito />;
   if (!url.trim()) return <p className="admin-dica">Cole o link de compartilhamento do Google Drive (ou outro link https).</p>;
   const a = analisarUrlMaterial(url);
   if (!a.valido) return <p className="link-status link-status--erro"><Icon name="alert" size={15} /> {a.erro}</p>;

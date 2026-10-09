@@ -148,19 +148,49 @@ export function mesDasTabelas(arquivos) {
   return `${mes.charAt(0).toUpperCase()}${mes.slice(1)}${ano ? ` ${ano}` : ''}`;
 }
 
-// O arquivo do Drive está compartilhado como "Qualquer pessoa com o link"? Pela API do Drive (com a
-// chave do navegador) um arquivo restrito responde 404. Resposta: true | false | null (não deu para saber).
+// O arquivo (ou pasta) do Drive está compartilhado como "Qualquer pessoa com o link"? Pela API do
+// Drive (com a chave do navegador) um item restrito responde 404 — e o navegador não precisa baixar a
+// página de login do Google (~1 MB) que vem no lugar da imagem. Resposta: true | false | null (sem como saber).
+// Guarda o resultado no navegador: público por 12 h; restrito só por 10 min (para refletir logo a correção).
 const CACHE_PUBLICO = new Map();
+const CHAVE_ACESSO = 'audaz-acesso-drive';
+const VALIDADE = { true: 12 * 3600e3, false: 10 * 60e3 };
+
+function lerAcessoSalvo(id) {
+  try {
+    const salvo = JSON.parse(localStorage.getItem(CHAVE_ACESSO) || '{}')[id];
+    return salvo && Date.now() - salvo.em < VALIDADE[salvo.publico] ? salvo.publico : null;
+  } catch {
+    return null;
+  }
+}
+function salvarAcesso(id, publico) {
+  try {
+    const todos = JSON.parse(localStorage.getItem(CHAVE_ACESSO) || '{}');
+    todos[id] = { publico, em: Date.now() };
+    localStorage.setItem(CHAVE_ACESSO, JSON.stringify(todos));
+  } catch {
+    // sem armazenamento: só não lembra
+  }
+}
+
+/** Resultado já conhecido (memória ou navegador), sem chamar a API. */
+export const acessoConhecido = (id) => (CACHE_PUBLICO.has(id) ? CACHE_PUBLICO.get(id).valor : lerAcessoSalvo(id));
+
 export function arquivoEhPublico(id) {
   if (!temChaveDrive() || !id) return Promise.resolve(null);
   if (!CACHE_PUBLICO.has(id)) {
     const params = new URLSearchParams({ fields: 'id', supportsAllDrives: 'true', key: GOOGLE_DRIVE_API_KEY });
-    CACHE_PUBLICO.set(
-      id,
-      fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?${params}`)
-        .then((r) => (r.ok ? true : r.status === 404 ? false : null))
-        .catch(() => null)
-    );
+    const entrada = { valor: null };
+    entrada.promessa = fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?${params}`)
+      .then((r) => (r.ok ? true : r.status === 404 ? false : null))
+      .catch(() => null)
+      .then((publico) => {
+        entrada.valor = publico;
+        if (publico !== null) salvarAcesso(id, publico);
+        return publico;
+      });
+    CACHE_PUBLICO.set(id, entrada);
   }
-  return CACHE_PUBLICO.get(id);
+  return CACHE_PUBLICO.get(id).promessa;
 }

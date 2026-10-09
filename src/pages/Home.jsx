@@ -8,7 +8,8 @@ import { SELOS, STATUS } from '../data/config.js';
 import { useDados } from '../context/DadosContext.jsx';
 import { anoEntrega, ordenarPorEntrega } from '../utils/entrega.js';
 import { filtrarEmpreendimentos, fotosDo, opcoesUnicas, selosDo, ultimaAtualizacao, visiveis } from '../utils/empreendimentos.js';
-import { urlImagem } from '../utils/drive.js';
+import { analisarLinkDrive, urlImagem } from '../utils/drive.js';
+import useAcessoDrive from '../utils/useAcessoDrive.js';
 
 const VISTA_CHAVE = 'audaz-vista-lista';
 
@@ -130,6 +131,13 @@ export default function Home() {
   const [falhasTopo, setFalhasTopo] = useState(0);
   // Logo do grupo que não carrega (ex.: arquivo do Drive não compartilhado) volta para o texto.
   const [falhaLogoGrupo, setFalhaLogoGrupo] = useState(false);
+  // Logo no Drive: só carrega depois de confirmar que o arquivo é público (restrito = texto, sem
+  // baixar a página de login do Google no lugar da imagem). Enquanto confere, o espaço fica vazio.
+  const driveLogoGrupo = SITE.logoGrupoUrl ? analisarLinkDrive(SITE.logoGrupoUrl) : null;
+  const acessoLogoGrupo = useAcessoDrive(driveLogoGrupo?.valido ? driveLogoGrupo.id : null);
+  const estadoLogoGrupo = !SITE.logoGrupoUrl || falhaLogoGrupo || acessoLogoGrupo === false
+    ? 'texto'
+    : driveLogoGrupo?.valido && acessoLogoGrupo === null ? 'conferindo' : 'imagem';
   const fotoTopo = fotosTopo[falhasTopo] ? urlImagem(fotosTopo[falhasTopo], 1600) : null;
   // "GRUPO DIRECIONAL" já tem a palavra Grupo; "Direcional" ganha o prefixo.
   const temGrupo = /^grupo\b/i.test((SITE.parceiro || '').trim());
@@ -166,7 +174,9 @@ export default function Home() {
         <nav className="inicio-nav container">
           <div className="inicio-nav__marca">
             <Logo />
-            {SITE.logoGrupoUrl && !falhaLogoGrupo ? (
+            {estadoLogoGrupo === 'conferindo' ? (
+              <span className="inicio-nav__logo-grupo inicio-nav__logo-grupo--vazio" aria-hidden="true" />
+            ) : estadoLogoGrupo === 'imagem' ? (
               <img
                 className="inicio-nav__logo-grupo"
                 src={urlImagem(SITE.logoGrupoUrl, 800)}
