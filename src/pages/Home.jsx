@@ -111,11 +111,15 @@ export default function Home() {
         <nav className="inicio-nav container">
           <div className="inicio-nav__marca">
             <Logo />
-            <span className="inicio-nav__grupo">
-              <small>Grupo</small>
-              <strong>{parceiroSemGrupo}</strong>
-              {construtoras.length > 0 && <em>{construtoras.join('  |  ')}</em>}
-            </span>
+            {SITE.logoGrupoUrl ? (
+              <img className="inicio-nav__logo-grupo" src={urlImagem(SITE.logoGrupoUrl, 800)} alt={nomeGrupo} referrerPolicy="no-referrer" />
+            ) : (
+              <span className="inicio-nav__grupo">
+                <small>Grupo</small>
+                <strong>{parceiroSemGrupo}</strong>
+                {construtoras.length > 0 && <em>{construtoras.join('  |  ')}</em>}
+              </span>
+            )}
           </div>
           <div className="inicio-nav__links">
             <a href="#/" className="ativo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDados } from '../../context/DadosContext.jsx';
 import { salvarSite, logoParaDataUrl, mensagemErro } from '../../services/admin.js';
+import { sanitizarUrl } from '../../utils/urls.js';
+import CampoLinkFoto from './CampoLinkFoto.jsx';
 
 const CAMPOS = [
   { chave: 'marca', rotulo: 'Nome da marca' },
@@ -38,7 +40,11 @@ export default function AdminMarca() {
     setSalvando(true);
     try {
       const { marca, parceiro, titulo, subtitulo, rodape, logoUrl } = form;
-      await salvarSite({ marca, parceiro, titulo, subtitulo, rodape, logoUrl: logoUrl || null });
+      // Logo do grupo: só link (https), como as demais imagens.
+      const textoGrupo = (form.logoGrupoUrl || '').trim();
+      const grupo = textoGrupo ? sanitizarUrl(textoGrupo) : null;
+      if (grupo && !grupo.valida) throw new Error(`Logo do grupo: ${grupo.erro}`);
+      await salvarSite({ marca, parceiro, titulo, subtitulo, rodape, logoUrl: logoUrl || null, logoGrupoUrl: grupo ? grupo.url : null });
       setAviso({ texto: 'Salvo! Já está no ar.' });
     } catch (falha) {
       setAviso({ erro: true, texto: mensagemErro(falha) });
@@ -72,6 +78,16 @@ export default function AdminMarca() {
           </div>
           <p className="admin-dica">PNG ou SVG com fundo transparente fica melhor. Ela aparece sobre o fundo azul-escuro do topo.</p>
         </div>
+      </fieldset>
+
+      <fieldset className="admin-bloco">
+        <legend>Logo do grupo</legend>
+        <p className="admin-dica admin-dica--bloco">
+          Aparece no topo da página inicial, ao lado da logo da Audaz, no lugar do texto “Grupo … / construtoras”.
+          Cole o link da imagem no Google Drive (Compartilhar → “Qualquer pessoa com o link” → Copiar link).
+          PNG com fundo transparente e letras claras fica melhor, porque o topo é escuro.
+        </p>
+        <CampoLinkFoto valor={form.logoGrupoUrl || ''} onChange={(v) => setForm((f) => ({ ...f, logoGrupoUrl: v }))} />
       </fieldset>
 
       <fieldset className="admin-bloco">
