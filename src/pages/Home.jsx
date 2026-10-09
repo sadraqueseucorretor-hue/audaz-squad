@@ -4,10 +4,10 @@ import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
 import EmpreendimentoCard from '../components/EmpreendimentoCard.jsx';
 import Footer from '../components/Footer.jsx';
-import { STATUS } from '../data/config.js';
+import { SELOS, STATUS } from '../data/config.js';
 import { useDados } from '../context/DadosContext.jsx';
 import { anoEntrega, ordenarPorEntrega } from '../utils/entrega.js';
-import { filtrarEmpreendimentos, fotosDo, opcoesUnicas, ultimaAtualizacao } from '../utils/empreendimentos.js';
+import { filtrarEmpreendimentos, fotosDo, opcoesUnicas, selosDo, ultimaAtualizacao, visiveis } from '../utils/empreendimentos.js';
 import { urlImagem } from '../utils/drive.js';
 
 const VISTA_CHAVE = 'audaz-vista-lista';
@@ -44,6 +44,7 @@ export default function Home() {
   const cidade = params.get('cidade') || '';
   const construtora = params.get('construtora') || '';
   const ano = params.get('ano') || '';
+  const selo = params.get('selo') || '';
   // Ordem: '' (definida no painel) | 'entrega' (mais próxima) | 'entrega-desc' (mais distante).
   const ordem = params.get('ordem') || '';
   const [textoBusca, setTextoBusca] = useState(busca);
@@ -69,12 +70,18 @@ export default function Home() {
     }
   };
 
-  const { empreendimentos: todos, site: SITE, carregando } = useDados();
+  const { empreendimentos: cadastrados, site: SITE, carregando } = useDados();
+  // Ocultados no painel não aparecem; os com selo (destaque, campanha…) vêm primeiro.
+  const todos = useMemo(() => visiveis(cadastrados), [cadastrados]);
   const resultado = useMemo(() => {
-    const filtrados = filtrarEmpreendimentos(todos, { busca, status, cidade, construtora, ano });
+    const filtrados = filtrarEmpreendimentos(todos, { busca, status, cidade, construtora, ano, selo });
     return ordem ? ordenarPorEntrega(filtrados, ordem === 'entrega-desc') : filtrados;
-  }, [todos, busca, status, cidade, construtora, ano, ordem]);
-  const filtrando = Boolean(busca || status || cidade || construtora || ano);
+  }, [todos, busca, status, cidade, construtora, ano, selo, ordem]);
+  const filtrando = Boolean(busca || status || cidade || construtora || ano || selo);
+  // No celular os filtros ficam recolhidos atrás de um botão (mostra quantos estão ativos).
+  const filtrosAtivos = [status, cidade, construtora, ano, ordem].filter(Boolean).length;
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const selosUsados = Object.entries(SELOS).filter(([chave]) => todos.some((e) => selosDo(e).includes(chave)));
 
   const construtoras = opcoesUnicas(todos, 'construtora');
   const cidades = opcoesUnicas(todos, 'cidade');
@@ -88,10 +95,13 @@ export default function Home() {
   // carregar (ex.: foto restrita no Drive), tenta a próxima.
   const fotosTopo = todos.map((e) => e.banner || fotosDo(e)[0]).filter(Boolean);
   const [falhasTopo, setFalhasTopo] = useState(0);
+  // Logo do grupo que não carrega (ex.: arquivo do Drive não compartilhado) volta para o texto.
+  const [falhaLogoGrupo, setFalhaLogoGrupo] = useState(false);
   const fotoTopo = fotosTopo[falhasTopo] ? urlImagem(fotosTopo[falhasTopo], 1600) : null;
   // "GRUPO DIRECIONAL" já tem a palavra Grupo; "Direcional" ganha o prefixo.
   const temGrupo = /^grupo\b/i.test((SITE.parceiro || '').trim());
-  const nomeGrupo = temGrupo ? SITE.parceiro.trim() : `Grupo ${SITE.parceiro}`;
+  // Sem grupo/parceiro preenchido no painel, a linha mostra só as construtoras (nada de "Grupo" solto).
+  const nomeGrupo = !(SITE.parceiro || '').trim() ? '' : temGrupo ? SITE.parceiro.trim() : `Grupo ${SITE.parceiro.trim()}`;
   const parceiroSemGrupo = (SITE.parceiro || '').trim().replace(/^grupo\s+/i, '');
 
   const buscar = (e) => {
@@ -111,12 +121,18 @@ export default function Home() {
         <nav className="inicio-nav container">
           <div className="inicio-nav__marca">
             <Logo />
-            {SITE.logoGrupoUrl ? (
-              <img className="inicio-nav__logo-grupo" src={urlImagem(SITE.logoGrupoUrl, 800)} alt={nomeGrupo} referrerPolicy="no-referrer" />
+            {SITE.logoGrupoUrl && !falhaLogoGrupo ? (
+              <img
+                className="inicio-nav__logo-grupo"
+                src={urlImagem(SITE.logoGrupoUrl, 800)}
+                alt={nomeGrupo || 'Logo do grupo'}
+                referrerPolicy="no-referrer"
+                onError={() => setFalhaLogoGrupo(true)}
+              />
             ) : (
               <span className="inicio-nav__grupo">
-                <small>Grupo</small>
-                <strong>{parceiroSemGrupo}</strong>
+                {parceiroSemGrupo && <small>Grupo</small>}
+                {parceiroSemGrupo && <strong>{parceiroSemGrupo}</strong>}
                 {construtoras.length > 0 && <em>{construtoras.join('  |  ')}</em>}
               </span>
             )}
@@ -141,7 +157,7 @@ export default function Home() {
           <p className="inicio-heroi__marca">{SITE.marca}</p>
           <h1>{SITE.titulo}</h1>
           <p className="inicio-heroi__grupo">
-            {[nomeGrupo, ...construtoras].map((n, i) => (
+            {[nomeGrupo, ...construtoras].filter(Boolean).map((n, i) => (
               <span key={n}>{i > 0 && <i>•</i>}{n}</span>
             ))}
           </p>
@@ -155,7 +171,7 @@ export default function Home() {
                 setTextoBusca(e.target.value);
                 if (!e.target.value) atualizar('q', '');
               }}
-              placeholder="Buscar empreendimento, bairro, cidade ou construtora…"
+              placeholder="Nome, bairro, construtora, status…"
               aria-label="Buscar empreendimentos"
             />
             <button type="submit">Buscar</button>
@@ -183,7 +199,18 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="inicio-filtros">
+        <button
+          type="button"
+          className={`inicio-filtros-botao ${filtrosAbertos ? 'aberto' : ''}`}
+          aria-expanded={filtrosAbertos}
+          aria-controls="inicio-filtros"
+          onClick={() => setFiltrosAbertos((v) => !v)}
+        >
+          <Icon name="sliders" size={18} /> Filtros e ordem
+          {filtrosAtivos > 0 && <b>{filtrosAtivos}</b>}
+          <Icon name="arrowRight" size={16} className="inicio-filtros-botao__seta" />
+        </button>
+        <div className={`inicio-filtros ${filtrosAbertos ? 'aberto' : ''}`} id="inicio-filtros">
           <Filtro icone="pin" rotulo="Cidade" valor={cidade} onChange={(v) => atualizar('cidade', v)} opcoes={cidades.map((c) => ({ valor: c, label: c }))} todos="Todas" />
           <Filtro icone="building" rotulo="Construtora" valor={construtora} onChange={(v) => atualizar('construtora', v)} opcoes={construtoras.map((c) => ({ valor: c, label: c }))} todos="Todas" />
           <Filtro icone="tag" rotulo="Status" valor={status} onChange={(v) => atualizar('status', v)} opcoes={opcoesStatus} />
@@ -218,6 +245,23 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {selosUsados.length > 0 && (
+          <div className="inicio-selos" role="group" aria-label="Mostrar só">
+            <button type="button" className={!selo ? 'ativo' : ''} aria-pressed={!selo} onClick={() => atualizar('selo', '')}>Todos</button>
+            {selosUsados.map(([chave, { label, icone }]) => (
+              <button
+                key={chave}
+                type="button"
+                className={`selo-${chave} ${selo === chave ? 'ativo' : ''}`}
+                aria-pressed={selo === chave}
+                onClick={() => atualizar('selo', selo === chave ? '' : chave)}
+              >
+                <Icon name={icone} size={16} /> {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {carregando ? (
           <p className="vazio">Carregando empreendimentos…</p>

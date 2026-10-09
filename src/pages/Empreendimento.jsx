@@ -12,7 +12,8 @@ import VisualizadorMaterial from '../components/VisualizadorMaterial.jsx';
 import MapaEmpreendimento from '../components/MapaEmpreendimento.jsx';
 import { listarMateriais } from '../utils/materiais.js';
 import { useDados } from '../context/DadosContext.jsx';
-import { buscarPorSlug, fotosDo } from '../utils/empreendimentos.js';
+import { SELOS } from '../data/config.js';
+import { buscarPorSlug, fotosDo, selosDo } from '../utils/empreendimentos.js';
 
 export default function Empreendimento() {
   const { slug } = useParams();
@@ -80,7 +81,12 @@ export default function Empreendimento() {
           <Logo compacto />
         </div>
         <div className="container banner__conteudo">
-          <StatusBadge status={emp.status} />
+          <div className="banner__selos">
+            <StatusBadge status={emp.status} />
+            {selosDo(emp).map((s) => (
+              <span key={s} className={`selo selo-${s}`}><Icon name={SELOS[s].icone} size={14} /> {SELOS[s].label}</span>
+            ))}
+          </div>
           <p className="banner__construtora">{emp.construtora}</p>
           <h1 className="banner__titulo">{emp.nome}</h1>
           <p className="banner__local">
@@ -90,6 +96,10 @@ export default function Empreendimento() {
       </header>
 
       <main className="container main main--detalhe">
+        {emp.ativo === false && (
+          // Ocultado no painel: some da lista dos corretores, mas o link continua abrindo (ex.: "Ver" do admin).
+          <p className="aviso-oculto"><Icon name="eyeOff" size={18} /> Este empreendimento está oculto e não aparece na lista dos corretores.</p>
+        )}
         <div className="acoes-rapidas">
           {/* Botão (não âncora #) porque o HashRouter usa o # para as rotas */}
           <button

@@ -2,16 +2,26 @@ import { Link } from 'react-router-dom';
 import Carrossel from './Carrossel.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import Icon from './Icon.jsx';
-import { fotosDo } from '../utils/empreendimentos.js';
+import { SELOS } from '../data/config.js';
+import { fotosDo, selosDo } from '../utils/empreendimentos.js';
 
 export default function EmpreendimentoCard({ emp, prioridade = false, emLista = false }) {
   const url = `/empreendimento/${emp.slug}`;
   const local = [emp.bairro, emp.cidade].filter(Boolean).join(' · ');
   return (
-    <article className={`emp-card ${emLista ? 'emp-card--lista' : ''}`}>
+    <article className={`emp-card ${emLista ? 'emp-card--lista' : ''} ${selosDo(emp).length ? 'emp-card--selo' : ''}`}>
       <div className="emp-card__media">
         <Carrossel fotos={fotosDo(emp)} alt={emp.nome} href={url} eager={prioridade} />
         <StatusBadge status={emp.status} className="emp-card__status" />
+        {selosDo(emp).length > 0 && (
+          <div className="emp-card__selos">
+            {selosDo(emp).map((s) => (
+              <span key={s} className={`selo selo-${s}`} title={SELOS[s].label}>
+                <Icon name={SELOS[s].icone} size={14} /> {SELOS[s].label}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="emp-card__body">

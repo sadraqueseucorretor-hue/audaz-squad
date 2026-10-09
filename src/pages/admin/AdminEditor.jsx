@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDados } from '../../context/DadosContext.jsx';
-import { STATUS } from '../../data/config.js';
+import { SELOS, STATUS } from '../../data/config.js';
 import { salvarEmpreendimento, mensagemErro } from '../../services/admin.js';
 import { buscarPorSlug, fotosDo } from '../../utils/empreendimentos.js';
 import { normalizar } from '../../utils/format.js';
@@ -16,7 +16,7 @@ import MateriaisEditor from './MateriaisEditor.jsx';
 const VAZIO = {
   slug: '', nome: '', construtora: 'Direcional', status: 'lancamento', bairro: '', cidade: '', uf: 'CE', endereco: '',
   entrega: '', observacoes: '',
-  logo: '', fotos: [''], banner: '', mapsUrl: '', materiaisLista: [],
+  logo: '', fotos: [''], banner: '', mapsUrl: '', materiaisLista: [], selos: [], ativo: true,
 };
 
 const gerarSlug = (nome) => normalizar(nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -116,6 +116,8 @@ export default function AdminEditor() {
       slug: slugFinal,
       nome: form.nome.trim(),
       observacoes: (form.observacoes || '').trim(),
+      selos: Object.keys(SELOS).filter((s) => (form.selos || []).includes(s)),
+      ativo: form.ativo !== false,
       ...fotos,
       materiaisLista,
       ordem: original?.ordem ?? empreendimentos.length,
@@ -157,6 +159,26 @@ export default function AdminEditor() {
               {Object.entries(STATUS).map(([valor, { label }]) => <option key={valor} value={valor}>{label}</option>)}
             </select>
           </Campo>
+          <div className="campo campo--largo">
+            <span>Destaque na inicial</span>
+            <div className="admin-selos">
+              {Object.entries(SELOS).map(([chave, { label }]) => (
+                <label key={chave} className="admin-check">
+                  <input
+                    type="checkbox"
+                    checked={(form.selos || []).includes(chave)}
+                    onChange={(e) => definir('selos', e.target.checked ? [...(form.selos || []), chave] : (form.selos || []).filter((s) => s !== chave))}
+                  />
+                  {label}
+                </label>
+              ))}
+              <label className="admin-check admin-check--oculto">
+                <input type="checkbox" checked={form.ativo === false} onChange={(e) => definir('ativo', !e.target.checked)} />
+                Ocultar dos corretores
+              </label>
+            </div>
+            <small>Com selo, o empreendimento aparece primeiro e ganha etiqueta no card. Oculto: some da lista, sem apagar nada.</small>
+          </div>
           <Campo rotulo="Construtora"><input value={form.construtora} onChange={campo('construtora')} /></Campo>
           <Campo rotulo="Entrega"><input value={form.entrega} onChange={campo('entrega')} placeholder="Ex.: Jun/2028" /></Campo>
           <Campo rotulo="Bairro"><input value={form.bairro} onChange={campo('bairro')} /></Campo>

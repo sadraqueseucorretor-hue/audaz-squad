@@ -5,6 +5,10 @@ import { db } from '../firebase.js';
 
 export const salvarEmpreendimento = (emp) => setDoc(doc(db, 'empreendimentos', emp.slug), emp);
 
+// Ocultar/mostrar para os corretores: grava só esses campos (o resto do cadastro fica intacto).
+export const definirVisibilidade = (slug, ativo) =>
+  setDoc(doc(db, 'empreendimentos', slug), { ativo, atualizadoEm: new Date().toISOString() }, { merge: true });
+
 export const excluirEmpreendimento = (slug) => deleteDoc(doc(db, 'empreendimentos', slug));
 
 export const salvarSite = (dados) => setDoc(doc(db, 'config', 'site'), dados, { merge: true });

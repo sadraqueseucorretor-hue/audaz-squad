@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useDados } from '../../context/DadosContext.jsx';
-import { STATUS, RECENTES_LIMITE } from '../../data/config.js';
+import { SELOS, STATUS, RECENTES_LIMITE } from '../../data/config.js';
 import { empreendimentos as exemplos } from '../../data/empreendimentos.js';
-import { excluirEmpreendimento, importarExemplos, salvarOrdem, mensagemErro } from '../../services/admin.js';
-import { atualizadosRecentemente, ultimaAtualizacao } from '../../utils/empreendimentos.js';
+import { excluirEmpreendimento, importarExemplos, salvarOrdem, definirVisibilidade, mensagemErro } from '../../services/admin.js';
+import { atualizadosRecentemente, selosDo, ultimaAtualizacao } from '../../utils/empreendimentos.js';
 import RecentesSection from '../../components/RecentesSection.jsx';
 import { tempoRelativo } from '../../utils/format.js';
 import Miniatura from '../../components/Miniatura.jsx';
@@ -34,6 +34,15 @@ export default function AdminLista() {
     executar(() => salvarOrdem(lista));
   };
 
+  // Ocultar/mostrar sem abrir o editor (não apaga nada; o empreendimento só sai da lista dos corretores).
+  const alternarOculto = (emp) => {
+    const ativo = emp.ativo === false;
+    executar(
+      () => definirVisibilidade(emp.slug, ativo),
+      ativo ? `"${emp.nome}" voltou a aparecer para os corretores.` : `"${emp.nome}" foi ocultado dos corretores.`
+    );
+  };
+
   const excluir = (emp) => {
     if (window.confirm(`Excluir "${emp.nome}"? Essa ação não pode ser desfeita.`)) {
       executar(() => excluirEmpreendimento(emp.slug), `"${emp.nome}" foi excluído.`);
@@ -45,7 +54,7 @@ export default function AdminLista() {
       <div className="admin__cabecalho">
         <div>
           <h1>Empreendimentos</h1>
-          <p>{empreendimentos.length} publicados · as alterações aparecem na hora para os corretores.</p>
+          <p>{empreendimentos.filter((e) => e.ativo !== false).length} publicados{empreendimentos.some((e) => e.ativo === false) ? ` · ${empreendimentos.filter((e) => e.ativo === false).length} ocultos` : ''} · as alterações aparecem para os corretores ao abrir ou recarregar a página.</p>
         </div>
         <Link to="/admin/novo" className="btn btn--primary">+ Novo empreendimento</Link>
       </div>
@@ -73,14 +82,18 @@ export default function AdminLista() {
       ) : (
         <ul className="admin-lista">
           {empreendimentos.map((emp, i) => (
-            <li key={emp.slug} className="admin-item">
+            <li key={emp.slug} className={`admin-item ${emp.ativo === false ? 'admin-item--oculto' : ''}`}>
               <div className="admin-item__ordem">
                 <button type="button" aria-label="Mover para cima" disabled={ocupado || i === 0} onClick={() => mover(i, -1)}>▲</button>
                 <button type="button" aria-label="Mover para baixo" disabled={ocupado || i === empreendimentos.length - 1} onClick={() => mover(i, 1)}>▼</button>
               </div>
               <Miniatura emp={emp} className="admin-item__thumb" />
               <div className="admin-item__info">
-                <strong>{emp.nome}</strong>
+                <strong>
+                  {emp.nome}
+                  {emp.ativo === false && <em className="admin-tag admin-tag--oculto">Oculto</em>}
+                  {selosDo(emp).map((s) => <em key={s} className={`admin-tag selo-${s}`}>{SELOS[s].label}</em>)}
+                </strong>
                 <span>
                   {STATUS[emp.status]?.label || emp.status} · {emp.bairro} · atualizado {tempoRelativo(ultimaAtualizacao(emp).data) || '—'}
                 </span>
@@ -88,6 +101,9 @@ export default function AdminLista() {
               <div className="admin-item__acoes">
                 <Link to={`/admin/editar/${emp.slug}`} className="btn btn--ghost btn--sm">Editar</Link>
                 <Link to={`/empreendimento/${emp.slug}`} target="_blank" className="btn btn--ghost btn--sm">Ver</Link>
+                <button type="button" className="btn btn--ghost btn--sm" disabled={ocupado} onClick={() => alternarOculto(emp)}>
+                  {emp.ativo === false ? 'Mostrar' : 'Ocultar'}
+                </button>
                 <button type="button" className="btn btn--perigo btn--sm" disabled={ocupado} onClick={() => excluir(emp)}>Excluir</button>
               </div>
             </li>

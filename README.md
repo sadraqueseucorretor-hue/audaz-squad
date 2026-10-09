@@ -2,15 +2,16 @@
 
 Catálogo público para corretores consultarem os materiais comerciais dos empreendimentos,
 com painel admin (`/#/admin`) para cadastrar empreendimentos, books, tabelas, fotos e trocar a logo.
-React 18 + Vite + React Router + Firebase (Auth, Firestore e Storage).
+React 18 + Vite + React Router + Firebase (Auth e Firestore). Fotos, books, tabelas e vídeos ficam no Google Drive (ou outro serviço https) — o sistema guarda só os links.
 
 ## Firebase
 
 1. Preencha `src/data/firebaseConfig.js` com as credenciais do app Web do projeto Firebase.
 2. Ative **Authentication → E-mail/senha** e crie o usuário admin.
 3. Crie o **Firestore** e publique as regras de `firestore.rules`.
-4. (Opcional, plano Blaze) Ative o **Storage** e publique `storage.rules` para enviar **fotos** pelo painel.
-   Os materiais (books, tabelas, plantas…) não usam o Storage: são cadastrados por link (Google Drive etc.).
+4. A chave do navegador precisa ter a **Google Drive API** liberada (lista os PDFs das pastas do Drive).
+
+A página dos corretores lê o Firestore pela API REST (sem baixar o SDK do Firebase); o SDK só carrega no painel.
 
 Sem credenciais, o site mostra os dados de exemplo de `src/data/empreendimentos.js`.
 No painel, com o banco vazio, o botão "Importar empreendimentos de exemplo" copia esses dados para o Firestore.
@@ -47,8 +48,7 @@ src/
 │  └─ materiais.js            ← como exibir cada link, compatibilidade com o formato antigo, agrupamento
 ├─ components/                ← componentes reutilizáveis
 │  ├─ Logo, Icon, SmartImage, StatusBadge
-│  ├─ SearchBar, FilterChips
-│  ├─ EmpreendimentoCard, RecentesSection
+│  ├─ EmpreendimentoCard, Carrossel, RecentesSection
 │  ├─ InfoGrid, MaterialCard, MaterialsSection
 │  ├─ VisualizadorMaterial    ← modal que abre o material dentro do site (com fallback)
 │  └─ ShareButton, Footer
@@ -90,8 +90,10 @@ Cada material fica em `materiaisLista` no documento do empreendimento:
 
 ## Comportamentos
 
-- Busca por nome, bairro, cidade ou construtora, sem diferenciar acento/maiúsculas.
-- Busca e filtros ficam na URL (`?q=&status=&cidade=`): o corretor volta da página do empreendimento sem perder a pesquisa e pode compartilhar o link já filtrado.
+- Busca por nome, bairro, cidade, construtora, status ("pronto"), selo ("campanha"), observações e nome dos materiais, sem diferenciar acento/maiúsculas.
+- **Selos** (`selos: ['destaque' | 'campanha' | 'condicao-especial']`, marcados no editor): o empreendimento aparece primeiro na inicial e ganha etiqueta no card. Lista em `SELOS` (`src/data/config.js`).
+- **Ocultar** (`ativo: false`): some da inicial sem apagar nada; o link direto ainda abre, com aviso.
+- Busca e filtros ficam na URL (`?q=&status=&cidade=&construtora=&ano=&selo=&ordem=`): o corretor volta da página do empreendimento sem perder a pesquisa e pode compartilhar o link já filtrado.
 - Imagens com lazy-load e fallback com as iniciais caso a URL quebre.
 - Botão **Compartilhar** usa o menu nativo do celular (WhatsApp etc.); no desktop copia o link.
 

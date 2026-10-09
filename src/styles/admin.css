@@ -659,3 +659,59 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
 .carregando-pagina { min-height: 60vh; display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--texto-suave); }
 .carregando-pagina .visor__spinner { border-color: rgba(2, 29, 64, 0.15); border-top-color: var(--vermelho); }
 .carrossel__vazio { display: block; width: 100%; height: 100%; background: var(--azul); }
+
+/* ===== Selos de destaque (Destaque, Campanha, Condição especial) ===== */
+.selo {
+  display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px 0 8px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; white-space: nowrap; background: #fff; color: var(--azul);
+  box-shadow: 0 2px 8px rgba(1, 17, 38, 0.18);
+}
+.selo-destaque .icon { color: var(--dourado); fill: var(--dourado); }
+.selo-campanha .icon { color: var(--vermelho); }
+.selo-condicao-especial .icon { color: var(--verde); }
+.emp-card__selos { position: absolute; top: 12px; right: 12px; z-index: 1; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.emp-card--selo { box-shadow: 0 0 0 2px rgba(183, 134, 43, 0.55), var(--sombra); }
+.badge--wine { background: var(--vinho); }
+.banner__selos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* Atalhos "Todos / Destaque / Campanha…" acima da grade */
+.inicio-selos { display: flex; gap: 8px; margin: -6px 0 18px; overflow-x: auto; scrollbar-width: none; }
+.inicio-selos::-webkit-scrollbar { display: none; }
+.inicio-selos button {
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; height: 38px; padding: 0 14px;
+  border: 1px solid var(--borda); border-radius: 999px; background: #fff; color: var(--azul);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: background var(--transicao), color var(--transicao);
+}
+.inicio-selos button:hover { border-color: var(--azul); }
+.inicio-selos button.ativo { background: var(--azul); border-color: var(--azul); color: #fff; }
+.inicio-selos button.ativo .icon { color: #fff; fill: none; }
+
+/* Botão que abre os filtros — só no celular */
+.inicio-filtros-botao { display: none; }
+@media (max-width: 640px) {
+  .inicio-filtros-botao {
+    display: flex; align-items: center; gap: 8px; width: 100%; min-height: 50px; margin-top: 12px; padding: 0 16px;
+    border: 1px solid var(--borda); border-radius: 12px; background: #fff; color: var(--azul);
+    font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .inicio-filtros-botao b { display: grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--vermelho); color: #fff; font-size: 12px; }
+  .inicio-filtros-botao__seta { margin-left: auto; transform: rotate(90deg); transition: transform var(--transicao); }
+  .inicio-filtros-botao.aberto .inicio-filtros-botao__seta { transform: rotate(-90deg); }
+  .inicio-filtros:not(.aberto) { display: none; }
+  .inicio-filtros.aberto { margin-top: 8px; }
+  .inicio-filtro { flex: 1 1 100%; }
+  .emp-card__selos .selo { height: 24px; font-size: 11px; }
+}
+
+/* Painel: selos, ocultar */
+.admin-selos { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 6px 0; }
+.admin-check { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; color: var(--azul); cursor: pointer; }
+.admin-check input { width: 18px; height: 18px; min-height: 0; padding: 0; accent-color: var(--vermelho); }
+.admin-check--oculto { color: var(--vinho); }
+.admin-tag { display: inline-flex; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: var(--gelo); font-size: 11px; font-style: normal; font-weight: 700; vertical-align: middle; }
+.admin-tag--oculto { background: var(--vinho); color: #fff; }
+.admin-item--oculto { opacity: 0.6; }
+.admin-item--oculto:hover { opacity: 1; }
+.aviso-oculto { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; padding: 12px 16px; border-radius: 12px; background: #fdecef; color: var(--vinho); font-weight: 600; }
+/* Título do topo cabe inteiro em celulares estreitos ("EMPREENDIMENTOS" é uma palavra longa) */
+@media (max-width: 640px) { .inicio-heroi h1 { font-size: clamp(26px, 8.4vw, 38px); } }

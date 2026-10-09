@@ -1,5 +1,6 @@
 // Regras de negócio sobre os dados: busca, filtros, materiais visíveis e "atualizados recentemente".
 // Funções puras: recebem a lista (vinda do Firestore ou dos dados de exemplo) por parâmetro.
+import { SELOS, STATUS } from '../data/config.js';
 import { categoriaPorChave } from '../data/tiposMateriais.js';
 import { listarMateriais } from './materiais.js';
 import { anoEntrega } from './entrega.js';
@@ -25,15 +26,44 @@ export function opcoesUnicas(lista, campo) {
   return [...porChave.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 }
 
-export function filtrarEmpreendimentos(lista, { busca = '', status = '', cidade = '', construtora = '', ano = '' }) {
+// Selos válidos do empreendimento, na ordem de prioridade de SELOS.
+export const selosDo = (emp) => Object.keys(SELOS).filter((s) => Array.isArray(emp?.selos) && emp.selos.includes(s));
+
+// O que o corretor vê: sem os empreendimentos ocultados no painel. Com "Ordem padrão", os que têm
+// selo vêm primeiro (destaque → campanha → condição especial), mantendo a ordem do painel entre eles.
+export function visiveis(lista) {
+  const prioridade = (e) => {
+    const primeiro = selosDo(e)[0];
+    return primeiro ? Object.keys(SELOS).indexOf(primeiro) : Infinity;
+  };
+  return lista
+    .filter((e) => e.ativo !== false)
+    .map((e, i) => ({ e, i, p: prioridade(e) }))
+    .sort((a, b) => a.p - b.p || a.i - b.i)
+    .map((x) => x.e);
+}
+
+// Texto em que a busca procura: dados do cadastro, status, selos, observações e nomes dos materiais
+// ("pronto" encontra "Pronto para morar"; "campanha" encontra os marcados com esse selo).
+function textoDeBusca(e) {
+  return normalizar([
+    e.nome, e.bairro, e.cidade, e.uf, e.construtora, e.endereco, e.entrega, e.observacoes,
+    STATUS[e.status]?.label,
+    ...selosDo(e).map((s) => SELOS[s].label),
+    ...listarMateriais(e).filter((m) => m.ativo !== false).map((m) => m.titulo),
+  ].filter(Boolean).join(' '));
+}
+
+export function filtrarEmpreendimentos(lista, { busca = '', status = '', cidade = '', construtora = '', ano = '', selo = '' }) {
   const termo = normalizar(busca);
   return lista.filter((e) => {
     if (status && e.status !== status) return false;
+    if (selo && !selosDo(e).includes(selo)) return false;
     if (cidade && normalizar(e.cidade) !== normalizar(cidade)) return false;
     if (construtora && normalizar(e.construtora) !== normalizar(construtora)) return false;
     if (ano && String(anoEntrega(e.entrega)) !== String(ano)) return false;
     if (!termo) return true;
-    const alvo = normalizar(`${e.nome} ${e.bairro} ${e.cidade} ${e.construtora}`);
+    const alvo = textoDeBusca(e);
     return termo.split(/\s+/).every((parte) => alvo.includes(parte));
   });
 }

@@ -206,3 +206,34 @@ test('Leitura pública: converte o formato do Firestore REST em valores comuns',
     materiaisLista: [{ titulo: 'BOOK', ativo: false }],
   });
 });
+
+import { selosDo, visiveis } from '../src/utils/empreendimentos.js';
+
+test('visiveis: esconde ocultos e põe os com selo primeiro, mantendo a ordem do painel', () => {
+  const lista = [
+    { slug: 'a', nome: 'A' },
+    { slug: 'b', nome: 'B', selos: ['campanha'] },
+    { slug: 'c', nome: 'C', ativo: false, selos: ['destaque'] },
+    { slug: 'd', nome: 'D', selos: ['destaque', 'xyz'] },
+    { slug: 'e', nome: 'E' },
+  ];
+  assert.deepEqual(visiveis(lista).map((e) => e.slug), ['d', 'b', 'a', 'e']);
+  assert.deepEqual(selosDo(lista[3]), ['destaque']);
+  assert.deepEqual(selosDo({ selos: 'destaque' }), []);
+});
+
+test('busca: status, selo, observações e materiais', () => {
+  const lista = [
+    { slug: 'x', nome: 'Viva Vida', bairro: 'Passaré', status: 'pronto', construtora: 'Direcional' },
+    { slug: 'y', nome: 'Orizon', bairro: 'Centro', status: 'lancamento', selos: ['campanha'], observacoes: 'ITBI grátis',
+      materiaisLista: [{ id: '1', titulo: 'Book 2 quartos', categoria: 'book', urlOriginal: 'https://x.com', ativo: true }] },
+  ];
+  const nomes = (busca, extra = {}) => filtrarEmpreendimentos(lista, { busca, ...extra }).map((e) => e.slug);
+  assert.deepEqual(nomes('passare'), ['x']);
+  assert.deepEqual(nomes('pronto'), ['x']);
+  assert.deepEqual(nomes('direcional'), ['x']);
+  assert.deepEqual(nomes('campanha'), ['y']);
+  assert.deepEqual(nomes('itbi'), ['y']);
+  assert.deepEqual(nomes('2 quartos'), ['y']);
+  assert.deepEqual(nomes('', { selo: 'campanha' }), ['y']);
+});
