@@ -40,3 +40,11 @@ class InspetorDeToken(ABC):
     @abstractmethod
     def inspecionar(self, token: str) -> InformacoesToken:
         ...
+
+
+class AutenticadorBoraVender(ABC):
+    """Troca credenciais (e-mail/senha) por um token de acesso do Bora Vender."""
+
+    @abstractmethod
+    async def autenticar(self, email: str, senha: str) -> str:
+        ...

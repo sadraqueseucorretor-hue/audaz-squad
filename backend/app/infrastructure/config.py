@@ -53,6 +53,28 @@ class Configuracoes(BaseSettings):
         default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173"]
     )
 
+    # --- Renovação automática do token do Bora Vender ---
+    # Credenciais de login na Direcional (o payload do /autenticacao/login).
+    # Se ambas estiverem preenchidas, o servidor renova o token sozinho antes
+    # de expirar — sem precisar colar um token novo na mão.
+    bora_vender_email: str | None = None
+    bora_vender_senha: str | None = None
+    # Endpoint de login e header obrigatório client_id (vistos na chamada real).
+    bora_vender_login_url: str = (
+        "https://be.direcional.com.br/bora-vender/v1/autenticacao/login"
+    )
+    bora_vender_client_id: str = "b53793b2-7c67-42f4-ac30-06f3a6295179"
+    bora_vender_origin: str = "https://boravender.app.br"
+    # Caminho (com pontos) do ID token na resposta do login. O access_token
+    # dessa API decodifica como token_use=id também, então fixamos o campo.
+    bora_vender_token_campo: str = "authenticationResult.idToken"
+    # Liga/desliga a rotina de renovação automática.
+    renovacao_automatica: bool = True
+    # Renova quando faltar este tempo (ou menos) para expirar. Padrão: 5 min.
+    renovar_antes_segundos: int = 300
+    # De quanto em quanto tempo a rotina confere o token.
+    intervalo_renovacao_segundos: int = 60
+
 
 @lru_cache
 def obter_configuracoes() -> Configuracoes:

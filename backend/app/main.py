@@ -7,8 +7,9 @@ mapeamos exceções de domínio para códigos HTTP.
 """
 from __future__ import annotations
 
+import asyncio
 import os
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 import httpx
 from fastapi import FastAPI, Request
@@ -28,6 +29,7 @@ from .domain.exceptions import (
     TokenInvalido,
 )
 from .infrastructure.cache import CacheTTL
+from .infrastructure.renovacao import loop_de_renovacao
 from .infrastructure.config import obter_configuracoes
 from .infrastructure.db.base import criar_engine, criar_sessionmaker, criar_tabelas
 from .infrastructure.db.repositorios import RepositorioUsuariosDB
@@ -51,7 +53,24 @@ async def ciclo_de_vida(app: FastAPI):
 
     async with httpx.AsyncClient(timeout=config.http_timeout_segundos) as http:
         app.state.http = http
-        yield
+
+        # Rotina que renova o token do Bora Vender antes de expirar (opt-in:
+        # só liga se houver credenciais configuradas no .env).
+        tarefa_renovacao: asyncio.Task | None = None
+        if (
+            config.renovacao_automatica
+            and config.bora_vender_email
+            and config.bora_vender_senha
+        ):
+            tarefa_renovacao = asyncio.create_task(loop_de_renovacao(app, config))
+
+        try:
+            yield
+        finally:
+            if tarefa_renovacao is not None:
+                tarefa_renovacao.cancel()
+                with suppress(asyncio.CancelledError):
+                    await tarefa_renovacao
 
     await engine.dispose()
 
