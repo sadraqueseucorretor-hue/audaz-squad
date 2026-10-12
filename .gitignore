@@ -1,4 +1,19 @@
+# dependências e builds
 node_modules
 dist
+docs
+
+# sistema / editor
 .DS_Store
 .claude
+
+# segredos — NUNCA versionar (os .env.example e o frontend/.env.production, que
+# não têm segredo, continuam versionados por terem outro nome)
+.env
+backend/.env
+
+# caches do Python
+__pycache__/
+*.pyc
+.pytest_cache/
+tests/_test.db
