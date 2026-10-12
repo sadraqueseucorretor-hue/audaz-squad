@@ -45,9 +45,9 @@ jobs:
       - name: Enviar frontend/dist para a VPS
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "frontend/dist/**"
           target: "/opt/audaz-squad/frontend"
           strip_components: 1
@@ -55,18 +55,18 @@ jobs:
       - name: Enviar docker-compose.yml para a VPS
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "docker-compose.yml"
           target: "/opt/audaz-squad"
 
       - name: Deploy na VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             cd /opt/audaz-squad
             docker compose pull

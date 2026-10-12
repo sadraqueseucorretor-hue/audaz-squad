@@ -17,3 +17,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 tests/_test.db
+
+deploy_key_novo
+deploy_key_novo.pub

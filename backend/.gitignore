@@ -4,4 +4,6 @@ __pycache__/
 .venv/
 .env
 .env.example
+deploy_key_novo
+deploy_key_novo.pub
 dist/
