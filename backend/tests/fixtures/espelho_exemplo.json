@@ -1,0 +1,80 @@
+{
+  "blocos": [
+    {
+      "nome": "Bloco 1",
+      "andar": [
+        {
+          "valor": 219900.0,
+          "unidades": [
+            {
+              "idUnidadeSales": "u-001",
+              "identificador": "101",
+              "statusUnidade": "Disponível",
+              "andar": 1,
+              "tipoUnidade": "Apartamento",
+              "tipoPlanta": "Tipo 2 Qtos",
+              "areaPrivativaPrincipal": 48.5,
+              "numQuartos": 2,
+              "numSuites": 1,
+              "numBanhos": 1,
+              "qtdeVagas": 1,
+              "produtoDirecional": "Apto 101",
+              "valorFinalKit": 219900.0,
+              "valorAvalBancaria": 230000.0,
+              "folgaVoltaCaixa": 5000.0,
+              "baUnidade": 8000.0,
+              "dataAlteracao": "2026-10-02T09:15:00Z"
+            },
+            {
+              "idUnidadeSales": "u-002",
+              "identificador": "102",
+              "statusUnidade": "Reservada aguardando revisão de proposta",
+              "andar": 1,
+              "tipoUnidade": "Apartamento",
+              "areaPrivativaPrincipal": 41.0,
+              "numQuartos": 2,
+              "numSuites": 0,
+              "qtdeVagas": 1,
+              "dataAlteracao": "2026-10-01T10:00:00Z"
+            }
+          ]
+        },
+        {
+          "valor": 235000.0,
+          "unidades": [
+            {
+              "idUnidadeSales": "u-003",
+              "identificador": "201",
+              "statusUnidade": "Disponível",
+              "andar": 2,
+              "tipoUnidade": "Apartamento",
+              "areaPrivativaPrincipal": 48.5,
+              "numQuartos": 2,
+              "numSuites": 1,
+              "qtdeVagas": 1,
+              "valorFinalKit": 235000.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nome": "Bloco 2",
+      "andar": [
+        {
+          "valor": 0,
+          "unidades": [
+            {
+              "idUnidadeSales": "u-004",
+              "identificador": "101",
+              "statusUnidade": "Vendida",
+              "valorFinalKit": 210000.0,
+              "andar": 1,
+              "numQuartos": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
