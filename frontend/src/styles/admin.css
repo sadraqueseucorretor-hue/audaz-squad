@@ -907,17 +907,18 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
 .admin-icone__nome { max-width: 520px; margin-bottom: 14px; }
 /* iLove Audaz (Central de Documentos) dentro do Audaz */
 .ilove__frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
-/* Celular e tablet: Simulador e iLove Audaz só com o ícone, para caberem ao lado da Tabela de valores */
-@media (max-width: 1024px) {
+/* Até 1180 px: Simulador, iLove Audaz e Disponibilidade só com o ícone, para caberem ao lado da Tabela de valores */
+@media (max-width: 1180px) {
   .inicio-nav__simulador .inicio-nav__rotulo { display: none; }
   .inicio-nav__simulador { width: 42px; padding: 0 !important; justify-content: center; }
 }
-/* Topo da inicial com três botões (Simulador, iLove Audaz, Tabela): textos numa linha só e os
-   links Início/Empreendimentos/Admin saem mais cedo para dar espaço. */
+/* Topo da inicial com quatro botões (Simulador, iLove Audaz, Disponibilidade, Tabela): textos numa
+   linha só, o topo pode ser mais largo que o conteúdo e o link Início sai mais cedo para dar espaço. */
+.inicio-nav { max-width: 1440px; }
 @media (min-width: 641px) {
   .inicio-nav__tabela, .inicio-nav__links a { white-space: nowrap; }
 }
-@media (max-width: 1240px) {
+@media (max-width: 1300px) {
   .inicio-nav__links { display: none; }
   .inicio-nav__acoes { margin-left: auto; }
 }
@@ -927,8 +928,15 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   border-radius: 10px; font-size: 14px; font-weight: 600; white-space: nowrap; color: rgba(255, 255, 255, 0.72);
 }
 .inicio-nav__admin:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
-@media (max-width: 1380px) { .inicio-nav__admin .inicio-nav__rotulo { display: none; } .inicio-nav__admin { width: 40px; padding: 0; justify-content: center; } }
+@media (max-width: 1439px) { .inicio-nav__admin .inicio-nav__rotulo { display: none; } .inicio-nav__admin { width: 40px; padding: 0; justify-content: center; } }
 @media (max-width: 1024px) { .inicio-nav__admin { display: none; } }
+/* Celular: os quatro botões não cabem ao lado das logos, então descem para uma segunda linha */
+@media (max-width: 480px) {
+  .inicio-nav { flex-wrap: wrap; row-gap: 12px; padding-top: 12px; padding-bottom: 4px; }
+  .inicio-nav__acoes { margin-left: 0; width: 100%; }
+  .inicio-nav__tabela:not(.inicio-nav__simulador) { flex: 1; justify-content: center; }
+  .inicio-nav__simulador { flex-shrink: 0; }
+}
 
 /* ===== Painel: Acessos ===== */
 .acessos-agora { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center; padding: 22px 24px; border-radius: 18px; background: linear-gradient(135deg, var(--azul), var(--azul-noite)); color: #fff; box-shadow: var(--sombra); }
