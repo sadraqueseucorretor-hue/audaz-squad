@@ -40,6 +40,14 @@ class CredencialBoraVenderAusente(ErroDeDominio):
     """Nenhum token do Bora Vender foi cadastrado no servidor ainda."""
 
 
+class UsuarioJaExiste(ErroDeDominio):
+    """Já existe um administrador com o e-mail informado."""
+
+
+class OperacaoNaoPermitida(ErroDeDominio):
+    """Ação bloqueada por regra de negócio (ex.: remover o último admin)."""
+
+
 class FalhaNaIntegracao(ErroDeDominio):
     """O Bora Vender respondeu com erro ou ficou indisponível."""
 

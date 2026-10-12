@@ -53,6 +53,7 @@ export default function AdminGate() {
             <NavLink to="/admin/tabela">Tabela de valores</NavLink>
             <NavLink to="/admin/integracao">Integração</NavLink>
             <NavLink to="/admin/marca">Logo e textos</NavLink>
+            <NavLink to="/admin/usuarios">Administradores</NavLink>
             <Link to="/disponibilidade" target="_blank">Disponibilidade</Link>
             <Link to="/" target="_blank">Ver site</Link>
           </nav>

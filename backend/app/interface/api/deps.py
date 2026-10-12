@@ -29,6 +29,11 @@ from ...application.use_cases.credencial_bora_vender import (
 from ...application.use_cases.inspecionar_token import InspecionarToken
 from ...application.use_cases.listar_empreendimentos import ListarEmpreendimentos
 from ...application.use_cases.obter_disponibilidade import ObterDisponibilidade
+from ...application.use_cases.usuarios import (
+    CriarUsuario,
+    ExcluirUsuario,
+    ListarUsuarios,
+)
 from ...domain.conta import UsuarioAdmin
 from ...domain.exceptions import (
     CredencialBoraVenderAusente,
@@ -50,7 +55,7 @@ from ...infrastructure.db.repositorios import (
 )
 from ...infrastructure.seguranca.inspetor_jwt import InspetorJwt
 from ...infrastructure.seguranca.jwt_app import ServicoJwtApp
-from ...infrastructure.seguranca.senha import conferir
+from ...infrastructure.seguranca.senha import conferir, gerar_hash
 
 
 def get_configuracoes() -> Configuracoes:
@@ -141,6 +146,20 @@ def get_autenticar(sessao: SessionDep) -> AutenticarUsuario:
     return AutenticarUsuario(RepositorioUsuariosDB(sessao), conferir)
 
 
+# ----- casos de uso: administradores -----
+
+def get_listar_usuarios(sessao: SessionDep) -> ListarUsuarios:
+    return ListarUsuarios(RepositorioUsuariosDB(sessao))
+
+
+def get_criar_usuario(sessao: SessionDep) -> CriarUsuario:
+    return CriarUsuario(RepositorioUsuariosDB(sessao), gerar_hash)
+
+
+def get_excluir_usuario(sessao: SessionDep) -> ExcluirUsuario:
+    return ExcluirUsuario(RepositorioUsuariosDB(sessao))
+
+
 # ----- casos de uso: credencial Bora Vender -----
 
 def get_salvar_credencial(sessao: SessionDep) -> SalvarCredencialBoraVender:
@@ -205,6 +224,9 @@ def get_salvar_config(sessao: SessionDep) -> SalvarConfigSite:
 
 # Aliases Annotated para os routers.
 AutenticarDep = Annotated[AutenticarUsuario, Depends(get_autenticar)]
+ListarUsuariosDep = Annotated[ListarUsuarios, Depends(get_listar_usuarios)]
+CriarUsuarioDep = Annotated[CriarUsuario, Depends(get_criar_usuario)]
+ExcluirUsuarioDep = Annotated[ExcluirUsuario, Depends(get_excluir_usuario)]
 SalvarCredencialDep = Annotated[SalvarCredencialBoraVender, Depends(get_salvar_credencial)]
 StatusCredencialDep = Annotated[ObterStatusCredencialBoraVender, Depends(get_status_credencial)]
 ListarEmpreendimentosDep = Annotated[ListarEmpreendimentos, Depends(get_listar_empreendimentos)]

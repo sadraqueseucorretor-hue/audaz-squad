@@ -25,8 +25,10 @@ from .domain.exceptions import (
     ErroDeDominio,
     FalhaNaIntegracao,
     NaoAutorizado,
+    OperacaoNaoPermitida,
     TokenExpirado,
     TokenInvalido,
+    UsuarioJaExiste,
 )
 from .infrastructure.cache import CacheTTL
 from .infrastructure.renovacao import loop_de_renovacao
@@ -35,7 +37,14 @@ from .infrastructure.db.base import criar_engine, criar_sessionmaker, criar_tabe
 from .infrastructure.db.repositorios import RepositorioUsuariosDB
 from .infrastructure.seguranca.senha import gerar_hash
 from .domain.conta import UsuarioAdmin
-from .interface.api.routers import auth, catalogo, empreendimentos, health, integracao
+from .interface.api.routers import (
+    auth,
+    catalogo,
+    empreendimentos,
+    health,
+    integracao,
+    usuarios,
+)
 
 
 @asynccontextmanager
@@ -112,7 +121,13 @@ def criar_app() -> FastAPI:
     )
 
     app.include_router(health.router)
-    for roteador in (auth.router, integracao.router, empreendimentos.router, catalogo.router):
+    for roteador in (
+        auth.router,
+        usuarios.router,
+        integracao.router,
+        empreendimentos.router,
+        catalogo.router,
+    ):
         app.include_router(roteador, prefix=config.prefixo_api)
 
     _registrar_tratadores_de_erro(app)
@@ -158,6 +173,14 @@ def _registrar_tratadores_de_erro(app: FastAPI) -> None:
     @app.exception_handler(EmpreendimentoNaoEncontrado)
     async def _(_: Request, erro: EmpreendimentoNaoEncontrado) -> JSONResponse:
         return resposta(404, str(erro))
+
+    @app.exception_handler(UsuarioJaExiste)
+    async def _(_: Request, erro: UsuarioJaExiste) -> JSONResponse:
+        return resposta(409, str(erro))
+
+    @app.exception_handler(OperacaoNaoPermitida)
+    async def _(_: Request, erro: OperacaoNaoPermitida) -> JSONResponse:
+        return resposta(400, str(erro))
 
     @app.exception_handler(FalhaNaIntegracao)
     async def _(_: Request, erro: FalhaNaIntegracao) -> JSONResponse:

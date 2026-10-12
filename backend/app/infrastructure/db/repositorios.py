@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...domain.catalogo import ConfigSite, EmpreendimentoCatalogo
@@ -39,6 +39,16 @@ class RepositorioUsuariosDB(RepositorioUsuarios):
         )
         return _para_usuario(obj) if obj else None
 
+    async def por_id(self, id: int) -> UsuarioAdmin | None:
+        obj = await self._s.get(UsuarioModel, id)
+        return _para_usuario(obj) if obj else None
+
+    async def listar(self) -> Sequence[UsuarioAdmin]:
+        objs = await self._s.scalars(
+            select(UsuarioModel).order_by(UsuarioModel.criado_em, UsuarioModel.id)
+        )
+        return [_para_usuario(o) for o in objs]
+
     async def criar(self, usuario: UsuarioAdmin) -> UsuarioAdmin:
         obj = UsuarioModel(
             email=usuario.email.lower().strip(),
@@ -50,8 +60,17 @@ class RepositorioUsuariosDB(RepositorioUsuarios):
         await self._s.flush()
         return _para_usuario(obj)
 
+    async def excluir(self, id: int) -> None:
+        obj = await self._s.get(UsuarioModel, id)
+        if obj is not None:
+            await self._s.delete(obj)
+
     async def existe_algum(self) -> bool:
         return (await self._s.scalar(select(UsuarioModel.id).limit(1))) is not None
+
+    async def contar(self) -> int:
+        total = await self._s.scalar(select(func.count()).select_from(UsuarioModel))
+        return int(total or 0)
 
 
 class RepositorioCatalogoDB(RepositorioCatalogo):

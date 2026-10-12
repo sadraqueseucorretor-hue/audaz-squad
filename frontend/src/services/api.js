@@ -65,6 +65,11 @@ export const logout = () => gravarSessao(null);
 export const usuarioAtual = () => get('/auth/me', true);
 export const temSessao = () => Boolean(lerSessao());
 
+// ---- administradores (gestão de acessos ao painel) ----
+export const listarUsuarios = () => get('/usuarios', true);
+export const criarUsuario = (dados) => post('/usuarios', dados, true);
+export const excluirUsuario = (id) => del(`/usuarios/${id}`);
+
 // ---- catálogo (ex-Firestore) ----
 export const listarCatalogo = () => get('/catalogo/empreendimentos');
 export const obterDoCatalogo = (slug) => get(`/catalogo/empreendimentos/${encodeURIComponent(slug)}`);

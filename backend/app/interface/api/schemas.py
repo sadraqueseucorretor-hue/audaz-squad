@@ -197,6 +197,12 @@ class SessaoOut(BaseModel):
     usuario: UsuarioOut
 
 
+class UsuarioCriarIn(BaseModel):
+    email: str = Field(..., description="E-mail de login do novo administrador.")
+    senha: str = Field(..., min_length=6, description="Senha (mínimo 6 caracteres).")
+    nome: str | None = Field(default=None, description="Nome de exibição (opcional).")
+
+
 # ----- credencial Bora Vender -----
 
 class SalvarTokenIn(BaseModel):

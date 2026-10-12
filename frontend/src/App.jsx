@@ -15,6 +15,7 @@ const AdminEditor = lazy(() => import('./pages/admin/AdminEditor.jsx'));
 const AdminMarca = lazy(() => import('./pages/admin/AdminMarca.jsx'));
 const AdminTabela = lazy(() => import('./pages/admin/AdminTabela.jsx'));
 const AdminIntegracao = lazy(() => import('./pages/admin/AdminIntegracao.jsx'));
+const AdminUsuarios = lazy(() => import('./pages/admin/AdminUsuarios.jsx'));
 
 const Carregando = () => (
   <div className="carregando-pagina" aria-live="polite">
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="integracao" element={<AdminIntegracao />} />
             <Route path="marca" element={<AdminMarca />} />
             <Route path="tabela" element={<AdminTabela />} />
+            <Route path="usuarios" element={<AdminUsuarios />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
