@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listarEmpreendimentosBV, obterDisponibilidade } from '../services/api.js';
+import { normalizar } from '../utils/format.js';
 
 const formatarReais = (n) =>
   typeof n === 'number'
@@ -73,18 +74,7 @@ export default function Disponibilidade() {
       ) : (
         empreendimentos.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', margin: '16px 0' }}>
-            <label className="campo" style={{ minWidth: 260 }}>
-              <span>Empreendimento</span>
-              <select value={selecionado} onChange={(e) => setSelecionado(e.target.value)}>
-                <option value="">— Selecione um empreendimento —</option>
-                {empreendimentos.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.nome}
-                    {e.bairro ? ` — ${e.bairro}` : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <BuscaEmpreendimento empreendimentos={empreendimentos} selecionado={selecionado} onEscolher={setSelecionado} />
             <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <input type="checkbox" checked={soDisponiveis} onChange={(e) => setSoDisponiveis(e.target.checked)} />
               Só disponíveis
@@ -94,12 +84,116 @@ export default function Disponibilidade() {
       )}
 
       {!carregando && !selecionado && !erro && empreendimentos.length > 0 && (
-        <p style={{ color: '#666', marginTop: 8 }}>Selecione um empreendimento para ver a disponibilidade.</p>
+        <p style={{ color: '#666', marginTop: 8 }}>Pesquise e escolha um empreendimento para ver a disponibilidade.</p>
       )}
 
       {disp && <Resumo resumo={disp.resumo} />}
       {disp && <Tabela unidades={unidades} />}
     </main>
+  );
+}
+
+const rotuloEmp = (e) => (e.bairro ? `${e.nome} — ${e.bairro}` : e.nome);
+
+// Campo de busca com sugestões: digite parte do nome ou do bairro (sem precisar de acento).
+// Setas ↑/↓ navegam, Enter escolhe, Esc fecha.
+function BuscaEmpreendimento({ empreendimentos, selecionado, onEscolher }) {
+  const escolhido = empreendimentos.find((e) => String(e.id) === String(selecionado));
+  const [texto, setTexto] = useState(escolhido ? rotuloEmp(escolhido) : '');
+  const [aberto, setAberto] = useState(false);
+  const [ativo, setAtivo] = useState(0);
+  const lista = useRef(null);
+
+  const resultados = useMemo(() => {
+    const ordenados = [...empreendimentos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    // Com um empreendimento escolhido e o texto igual a ele, mostra a lista toda para facilitar a troca.
+    if (escolhido && texto === rotuloEmp(escolhido)) return ordenados;
+    const partes = normalizar(texto).split(/\s+/).filter(Boolean);
+    return ordenados.filter((e) => {
+      const alvo = normalizar(`${e.nome} ${e.bairro || ''}`);
+      return partes.every((p) => alvo.includes(p));
+    });
+  }, [empreendimentos, texto, escolhido]);
+
+  useEffect(() => {
+    lista.current?.children[ativo]?.scrollIntoView({ block: 'nearest' });
+  }, [ativo]);
+
+  function escolher(e) {
+    onEscolher(String(e.id));
+    setTexto(rotuloEmp(e));
+    setAberto(false);
+  }
+
+  function teclas(ev) {
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      ev.preventDefault();
+      setAberto(true);
+      const passo = ev.key === 'ArrowDown' ? 1 : -1;
+      setAtivo((i) => (resultados.length ? (i + passo + resultados.length) % resultados.length : 0));
+    } else if (ev.key === 'Enter') {
+      if (aberto && resultados[ativo]) {
+        ev.preventDefault();
+        escolher(resultados[ativo]);
+      }
+    } else if (ev.key === 'Escape') {
+      setAberto(false);
+    }
+  }
+
+  return (
+    <div className="campo busca-emp">
+      <label htmlFor="busca-emp">Empreendimento</label>
+      <div className="busca-emp__caixa">
+        <input
+          id="busca-emp"
+          type="search"
+          role="combobox"
+          aria-expanded={aberto}
+          aria-controls="busca-emp-lista"
+          aria-autocomplete="list"
+          aria-activedescendant={aberto && resultados[ativo] ? `busca-emp-${resultados[ativo].id}` : undefined}
+          autoComplete="off"
+          placeholder="Pesquisar por nome ou bairro…"
+          value={texto}
+          onChange={(ev) => {
+            setTexto(ev.target.value);
+            setAtivo(0);
+            setAberto(true);
+          }}
+          onFocus={(ev) => {
+            ev.target.select();
+            setAberto(true);
+          }}
+          onClick={() => setAberto(true)}
+          onBlur={() => setTimeout(() => setAberto(false), 120)}
+          onKeyDown={teclas}
+        />
+        {aberto && (
+          <ul className="busca-emp__lista" id="busca-emp-lista" role="listbox" ref={lista}>
+            {resultados.length === 0 ? (
+              <li className="busca-emp__vazio">Nenhum empreendimento encontrado.</li>
+            ) : (
+              resultados.map((e, i) => (
+                <li
+                  key={e.id}
+                  id={`busca-emp-${e.id}`}
+                  role="option"
+                  aria-selected={i === ativo}
+                  className={i === ativo ? 'ativo' : ''}
+                  onMouseDown={(ev) => ev.preventDefault()}
+                  onMouseEnter={() => setAtivo(i)}
+                  onClick={() => escolher(e)}
+                >
+                  <strong>{e.nome}</strong>
+                  {e.bairro && <small>{e.bairro}</small>}
+                </li>
+              ))
+            )}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
