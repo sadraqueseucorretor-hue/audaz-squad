@@ -176,7 +176,9 @@ def get_status_credencial(sessao: SessionDep) -> ObterStatusCredencialBoraVender
 
 def get_listar_empreendimentos(cliente: ClienteDep, config: ConfigDep) -> ListarEmpreendimentos:
     repo = RepositorioEmpreendimentosBoraVender(
-        cliente, unidade_de_negocio=config.unidade_de_negocio, regional=config.regional
+        cliente,
+        unidades_de_negocio=config.unidades_de_negocio,
+        regional=config.regional,
     )
     return ListarEmpreendimentos(repo)
 

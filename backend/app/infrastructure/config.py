@@ -19,7 +19,13 @@ class Configuracoes(BaseSettings):
 
     # Integração Bora Vender (Direcional)
     bora_vender_base_url: str = "https://be.direcional.com.br/bora-vender/v1"
-    unidade_de_negocio: str = "Direcional"
+    unidade_de_negocio: str = "Direcional"  # mantido por compatibilidade
+    # Unidades de negócio consultadas na listagem de empreendimentos. A Riva é a
+    # marca econômica da Direcional e é uma unidade de negócio SEPARADA no Bora
+    # Vender — por isso consultamos as duas e juntamos os resultados.
+    unidades_de_negocio: list[str] = Field(
+        default_factory=lambda: ["Direcional", "Riva"]
+    )
     regional: str = "CE"
     http_timeout_segundos: float = 30.0
 

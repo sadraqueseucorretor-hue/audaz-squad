@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from ...domain.entities import Disponibilidade, Empreendimento
-from ...domain.exceptions import FalhaNaIntegracao
+from ...domain.exceptions import FalhaNaIntegracao, TokenInvalido
 from ...domain.repositories import (
     RepositorioDeDisponibilidade,
     RepositorioDeEmpreendimentos,
@@ -20,28 +20,50 @@ class RepositorioEmpreendimentosBoraVender(RepositorioDeEmpreendimentos):
         self,
         cliente: ClienteBoraVender,
         *,
-        unidade_de_negocio: str,
+        unidades_de_negocio: Sequence[str],
         regional: str,
     ) -> None:
         self._cliente = cliente
-        self._unidade_de_negocio = unidade_de_negocio
+        # Remove vazios/duplicados preservando a ordem informada.
+        self._unidades = list(dict.fromkeys(u for u in unidades_de_negocio if u))
         self._regional = regional
 
     async def listar(
         self, credencial: Credencial, *, somente_disponiveis: bool = False
     ) -> Sequence[Empreendimento]:
-        dados = await self._cliente.get_json(
-            "empreendimento/obter",
-            credencial,
-            params={
-                "unidadeDeNegocio": self._unidade_de_negocio,
-                "regional": self._regional,
-                "somenteDisponiveis": str(somente_disponiveis).lower(),
-            },
-        )
-        if not isinstance(dados, list):
-            raise FalhaNaIntegracao("Lista de empreendimentos em formato inesperado.")
-        return [mapear_empreendimento(item) for item in dados if item]
+        # Consulta cada unidade de negócio e junta tudo, sem repetir o mesmo
+        # empreendimento (dedup por id). Um erro de token derruba todas (é
+        # autenticação); um erro pontual numa unidade não cancela as outras.
+        vistos: dict[str, Empreendimento] = {}
+        ultimo_erro: FalhaNaIntegracao | None = None
+        for unidade in self._unidades:
+            try:
+                dados = await self._cliente.get_json(
+                    "empreendimento/obter",
+                    credencial,
+                    params={
+                        "unidadeDeNegocio": unidade,
+                        "regional": self._regional,
+                        "somenteDisponiveis": str(somente_disponiveis).lower(),
+                    },
+                )
+            except TokenInvalido:
+                raise
+            except FalhaNaIntegracao as erro:
+                ultimo_erro = erro
+                continue
+            if not isinstance(dados, list):
+                continue
+            for item in dados:
+                if not item:
+                    continue
+                emp = mapear_empreendimento(item)
+                if emp.id:
+                    vistos.setdefault(emp.id, emp)
+
+        if not vistos and ultimo_erro is not None:
+            raise ultimo_erro
+        return sorted(vistos.values(), key=lambda e: (e.nome or "").lower())
 
 
 class RepositorioDisponibilidadeBoraVender(RepositorioDeDisponibilidade):
