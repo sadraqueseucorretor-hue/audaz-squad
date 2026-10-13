@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { listarEmpreendimentosBV, obterDisponibilidade } from '../services/api.js';
 import { normalizar } from '../utils/format.js';
 
@@ -30,7 +30,25 @@ const CHAVE_LARGURAS = 'audaz-disp-larguras-v1';
 
 // Tabela de disponibilidade (espelho de vendas) ao vivo do Bora Vender.
 // Usa o token guardado no servidor; se não houver, orienta a cadastrar.
+// Liga o empreendimento do catálogo (?emp=Nome, vindo da página do empreendimento) ao do Bora Vender:
+// primeiro pelo nome igual; senão, por um nome cujas palavras contêm as do outro ("Direcional Viva Vida
+// Maracanaú" ↔ "Viva Vida Maracanau"), se só houver um. Sem acento, caixa e "s" do plural ("Sabiás" ↔ "Sabiá").
+const palavras = (texto) => ` ${normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean).map((p) => p.replace(/s$/, '')).join(' ')} `;
+function acharPorNome(lista, nome) {
+  const alvo = palavras(nome);
+  if (!alvo.trim()) return null;
+  const igual = lista.find((e) => palavras(e.nome) === alvo);
+  if (igual) return igual;
+  const parecidos = lista.filter((e) => {
+    const outro = palavras(e.nome);
+    return outro.includes(alvo) || alvo.includes(outro);
+  });
+  return parecidos.length === 1 ? parecidos[0] : null;
+}
+
 export default function Disponibilidade() {
+  const [params] = useSearchParams();
+  const nomeVindo = params.get('emp') || '';
   const [empreendimentos, setEmpreendimentos] = useState([]);
   const [selecionado, setSelecionado] = useState('');
   const [disp, setDisp] = useState(null);
@@ -45,6 +63,13 @@ export default function Disponibilidade() {
       .finally(() => setCarregando(false));
   }, []);
 
+  // Vindo da página do empreendimento: já abre nele e só com as unidades disponíveis.
+  useEffect(() => {
+    const achado = nomeVindo && acharPorNome(empreendimentos, nomeVindo);
+    setSelecionado(achado ? String(achado.id) : '');
+    setSoDisponiveis(!!achado);
+  }, [empreendimentos, nomeVindo]);
+
   useEffect(() => {
     if (!selecionado) {
       setDisp(null);
@@ -52,7 +77,12 @@ export default function Disponibilidade() {
     }
     setDisp(null);
     setErro(null);
-    obterDisponibilidade(selecionado).then(setDisp).catch(setErro);
+    // Ao trocar de empreendimento rápido, ignora a resposta atrasada do anterior.
+    let atual = true;
+    obterDisponibilidade(selecionado)
+      .then((d) => atual && setDisp(d))
+      .catch((e) => atual && setErro(e));
+    return () => { atual = false; };
   }, [selecionado]);
 
   const unidades = useMemo(() => {
@@ -74,7 +104,12 @@ export default function Disponibilidade() {
       ) : (
         empreendimentos.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', margin: '16px 0' }}>
-            <BuscaEmpreendimento empreendimentos={empreendimentos} selecionado={selecionado} onEscolher={setSelecionado} />
+            <BuscaEmpreendimento
+              empreendimentos={empreendimentos}
+              selecionado={selecionado}
+              onEscolher={setSelecionado}
+              textoInicial={nomeVindo}
+            />
             <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <input type="checkbox" checked={soDisponiveis} onChange={(e) => setSoDisponiveis(e.target.checked)} />
               Só disponíveis
@@ -84,9 +119,14 @@ export default function Disponibilidade() {
       )}
 
       {!carregando && !selecionado && !erro && empreendimentos.length > 0 && (
-        <p style={{ color: '#666', marginTop: 8 }}>Pesquise e escolha um empreendimento para ver a disponibilidade.</p>
+        <p style={{ color: '#666', marginTop: 8 }}>
+          {nomeVindo
+            ? `Não encontramos “${nomeVindo}” automaticamente no sistema de disponibilidade. Pesquise e escolha acima.`
+            : 'Pesquise e escolha um empreendimento para ver a disponibilidade.'}
+        </p>
       )}
 
+      {selecionado && !disp && !erro && <p style={{ color: '#666', marginTop: 8 }}>Carregando disponibilidade…</p>}
       {disp && <Resumo resumo={disp.resumo} />}
       {disp && <Tabela unidades={unidades} />}
     </main>
@@ -97,12 +137,17 @@ const rotuloEmp = (e) => (e.bairro ? `${e.nome} — ${e.bairro}` : e.nome);
 
 // Campo de busca com sugestões: digite parte do nome ou do bairro (sem precisar de acento).
 // Setas ↑/↓ navegam, Enter escolhe, Esc fecha.
-function BuscaEmpreendimento({ empreendimentos, selecionado, onEscolher }) {
+function BuscaEmpreendimento({ empreendimentos, selecionado, onEscolher, textoInicial = '' }) {
   const escolhido = empreendimentos.find((e) => String(e.id) === String(selecionado));
-  const [texto, setTexto] = useState(escolhido ? rotuloEmp(escolhido) : '');
+  const [texto, setTexto] = useState(escolhido ? rotuloEmp(escolhido) : textoInicial);
   const [aberto, setAberto] = useState(false);
   const [ativo, setAtivo] = useState(0);
   const lista = useRef(null);
+
+  // Quando a escolha muda por fora (ex.: veio de outro empreendimento pelo link), o campo acompanha.
+  useEffect(() => {
+    setTexto(escolhido ? rotuloEmp(escolhido) : textoInicial);
+  }, [escolhido?.id, textoInicial]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const resultados = useMemo(() => {
     const ordenados = [...empreendimentos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));

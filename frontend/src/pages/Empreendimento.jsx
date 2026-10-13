@@ -113,6 +113,10 @@ export default function Empreendimento() {
             Ver materiais <Icon name="arrowRight" size={18} />
           </button>
           <BotaoTabela emp={emp} site={SITE} />
+          {/* Abre a Disponibilidade já neste empreendimento e só com as unidades disponíveis */}
+          <Link to={`/disponibilidade?emp=${encodeURIComponent(emp.nome)}`} className="btn btn--ghost">
+            <Icon name="layers" size={18} /> Disponibilidade
+          </Link>
           {SITE.simuladorUrl && (
             <Link to="/simulador" className="btn btn--ghost">
               <Icon name="calc" size={18} /> Simular proposta

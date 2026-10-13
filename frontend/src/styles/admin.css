@@ -967,8 +967,8 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
   .acessos-grafico__barras { gap: 3px; }
   .acessos-grafico__coluna span { font-size: 8px; }
 }
-/* Ações do empreendimento com "Tabela de valores": Ver materiais · Tabela · Simular · Compartilhar */
-.acoes-rapidas { grid-template-columns: 1fr repeat(3, auto); }
+/* Ações do empreendimento: Ver materiais · Tabela · Disponibilidade · Simular · Compartilhar */
+.acoes-rapidas { grid-template-columns: 1fr repeat(4, auto); }
 @media (max-width: 640px) {
   .acoes-rapidas { grid-template-columns: 1fr 1fr; }
   .acoes-rapidas > :last-child:nth-child(even) { grid-column: 1 / -1; }
