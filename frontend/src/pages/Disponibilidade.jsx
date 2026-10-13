@@ -34,8 +34,16 @@ const CHAVE_LARGURAS = 'audaz-disp-larguras-v1';
 // primeiro pelo nome igual; senão, por um nome cujas palavras contêm as do outro ("Direcional Viva Vida
 // Maracanaú" ↔ "Viva Vida Maracanau"), se só houver um. Sem acento, caixa e "s" do plural ("Sabiás" ↔ "Sabiá").
 const palavras = (texto) => ` ${normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean).map((p) => p.replace(/s$/, '')).join(' ')} `;
+// Nomes do catálogo que no Bora Vender são diferentes demais para ligar sozinhos: catálogo → Bora Vender.
+const NOMES_NO_BORA_VENDER = {
+  'VIVA NOVA CAUCAIA': 'Direcional Vida Nova Caucaia',
+};
+const nomeNoBoraVender = Object.fromEntries(
+  Object.entries(NOMES_NO_BORA_VENDER).map(([catalogo, bv]) => [palavras(catalogo), bv]),
+);
+
 function acharPorNome(lista, nome) {
-  const alvo = palavras(nome);
+  const alvo = palavras(nomeNoBoraVender[palavras(nome)] ?? nome);
   if (!alvo.trim()) return null;
   const igual = lista.find((e) => palavras(e.nome) === alvo);
   if (igual) return igual;
