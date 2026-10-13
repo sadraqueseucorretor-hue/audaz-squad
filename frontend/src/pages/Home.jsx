@@ -221,6 +221,10 @@ export default function Home() {
                 <Icon name="table" size={18} /> Tabela de valores
               </Link>
             )}
+            {/* Porta de acesso ao AudazCenter (na raiz do domínio; o Squad fica em /squad). */}
+            <a href="/" className="inicio-nav__tabela inicio-nav__simulador" aria-label="AudazCenter" title="Ir para o AudazCenter">
+              <Icon name="external" size={18} /> <span className="inicio-nav__rotulo">AudazCenter</span>
+            </a>
           </div>
           {/* Acesso do administrador: discreto, no canto direito (no celular fica só no rodapé). */}
           <Link to="/admin" className="inicio-nav__admin" aria-label="Acesso Admin" title="Acesso Admin">
