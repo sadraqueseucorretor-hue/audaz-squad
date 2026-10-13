@@ -28,6 +28,18 @@ const COLUNAS = [
 const LARGURA_MINIMA = 50;
 const CHAVE_LARGURAS = 'audaz-disp-larguras-v1';
 
+// Categorias de status (vindas do backend em u.categoria_status) com rótulo e cor.
+// Usadas no filtro de status: marque quais quer ver; nenhum marcado = todos.
+const STATUS_INFO = {
+  disponivel: { rotulo: 'Disponível', cor: '#1f9d55' },
+  reservada: { rotulo: 'Reservada', cor: '#b7791f' },
+  vendida: { rotulo: 'Vendida', cor: '#c0392b' },
+  quitada: { rotulo: 'Quitada', cor: '#555' },
+  bloqueada: { rotulo: 'Bloqueada', cor: '#888' },
+  outro: { rotulo: 'Outros', cor: '#888' },
+};
+const ORDEM_STATUS = ['disponivel', 'reservada', 'vendida', 'quitada', 'bloqueada', 'outro'];
+
 // Tabela de disponibilidade (espelho de vendas) ao vivo do Bora Vender.
 // Usa o token guardado no servidor; se não houver, orienta a cadastrar.
 // Liga o empreendimento do catálogo (?emp=Nome, vindo da página do empreendimento) ao do Bora Vender:
@@ -63,6 +75,7 @@ export default function Disponibilidade() {
   const [erro, setErro] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [soDisponiveis, setSoDisponiveis] = useState(false);
+  const [statusAtivos, setStatusAtivos] = useState(() => new Set()); // vazio = todos
 
   useEffect(() => {
     listarEmpreendimentosBV()
@@ -85,6 +98,7 @@ export default function Disponibilidade() {
     }
     setDisp(null);
     setErro(null);
+    setStatusAtivos(new Set()); // começa mostrando todos ao trocar de empreendimento
     // Ao trocar de empreendimento rápido, ignora a resposta atrasada do anterior.
     let atual = true;
     obterDisponibilidade(selecionado)
@@ -93,10 +107,30 @@ export default function Disponibilidade() {
     return () => { atual = false; };
   }, [selecionado]);
 
+  // Categorias de status realmente presentes no empreendimento atual (na ordem padrão).
+  const categoriasPresentes = useMemo(() => {
+    if (!disp) return [];
+    const presentes = new Set(disp.unidades.map((u) => u.categoria_status));
+    return ORDEM_STATUS.filter((c) => presentes.has(c));
+  }, [disp]);
+
   const unidades = useMemo(() => {
     if (!disp) return [];
-    return soDisponiveis ? disp.unidades.filter((u) => u.disponivel) : disp.unidades;
-  }, [disp, soDisponiveis]);
+    let us = soDisponiveis ? disp.unidades.filter((u) => u.disponivel) : disp.unidades;
+    // Filtro por status: nenhum marcado = mostra todos.
+    if (statusAtivos.size > 0) us = us.filter((u) => statusAtivos.has(u.categoria_status));
+    return us;
+  }, [disp, soDisponiveis, statusAtivos]);
+
+  function alternarStatus(cat) {
+    setStatusAtivos((prev) => {
+      const prox = new Set(prev);
+      if (prox.has(cat)) prox.delete(cat);
+      else prox.add(cat);
+      return prox;
+    });
+  }
+  const limparStatus = () => setStatusAtivos(new Set());
 
   return (
     <main className="container" style={{ padding: '24px 0' }}>
@@ -136,6 +170,14 @@ export default function Disponibilidade() {
 
       {selecionado && !disp && !erro && <p style={{ color: '#666', marginTop: 8 }}>Carregando disponibilidade…</p>}
       {disp && <Resumo resumo={disp.resumo} />}
+      {disp && (
+        <FiltroStatus
+          categorias={categoriasPresentes}
+          ativos={statusAtivos}
+          onAlternar={alternarStatus}
+          onLimpar={limparStatus}
+        />
+      )}
       {disp && <Tabela unidades={unidades} />}
     </main>
   );
@@ -277,6 +319,58 @@ function Cartao({ rotulo, valor, destaque }) {
     >
       <div style={{ fontSize: 13, color: '#666' }}>{rotulo}</div>
       <div style={{ fontSize: 20, fontWeight: 700 }}>{valor}</div>
+    </div>
+  );
+}
+
+// Filtro por status: um botão por categoria presente. Marque os que quer ver;
+// clicar alterna. Com nenhum marcado, a tabela mostra todas as unidades.
+function FiltroStatus({ categorias, ativos, onAlternar, onLimpar }) {
+  if (categorias.length <= 1) return null; // nada a filtrar se só há um status
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', margin: '4px 0 14px' }}>
+      <span style={{ fontSize: 13, color: '#666', fontWeight: 600 }}>Mostrar:</span>
+      {categorias.map((cat) => {
+        const info = STATUS_INFO[cat] || { rotulo: cat, cor: '#888' };
+        const on = ativos.has(cat);
+        return (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => onAlternar(cat)}
+            aria-pressed={on}
+            title={on ? 'Clique para ocultar' : 'Clique para mostrar só este'}
+            style={{
+              cursor: 'pointer',
+              padding: '4px 12px',
+              borderRadius: 999,
+              fontSize: 13,
+              fontWeight: 600,
+              border: `1.5px solid ${info.cor}`,
+              background: on ? info.cor : 'transparent',
+              color: on ? '#fff' : info.cor,
+              transition: 'background .12s, color .12s',
+            }}
+          >
+            {info.rotulo}
+          </button>
+        );
+      })}
+      {ativos.size > 0 && (
+        <button
+          type="button"
+          onClick={onLimpar}
+          style={{
+            cursor: 'pointer', padding: '4px 10px', borderRadius: 999, fontSize: 13,
+            border: '1px solid #ccc', background: 'transparent', color: '#666',
+          }}
+        >
+          Limpar
+        </button>
+      )}
+      <span style={{ fontSize: 12, color: '#999' }}>
+        {ativos.size === 0 ? '(nenhum marcado = todos)' : null}
+      </span>
     </div>
   );
 }
