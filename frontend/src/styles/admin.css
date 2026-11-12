@@ -873,16 +873,24 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
 .simulador__frame { top: -66px; height: calc(100% + 66px); }
 .tabela-pagina__topo button.visor__botao { border: 0; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 
+/* Simulador: "Gerar PDF" imprime o quadro numa única folha A4.
+   O quadro é desenhado 1,55× maior que a área útil da folha e reduzido na mesma proporção
+   (cabe a proposta no Modo Resumido do simulador, que ocupa ~1,5 página). */
 .simulador__folha { position: absolute; inset: 0; overflow: hidden; }
-/* Simulador: passo a passo do "Gerar PDF" (o PDF completo só sai com o simulador fora do quadro) */
-.guia-pdf { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: var(--gutter); background: rgba(1, 17, 38, 0.6); }
-.guia-pdf__caixa { position: relative; width: 100%; max-width: 520px; padding: 26px 24px 22px; border-radius: 16px; background: #fff; color: var(--texto, #1a1a1a); box-shadow: 0 24px 60px -20px rgba(1, 17, 38, 0.6); }
-.guia-pdf__caixa h2 { margin: 0 0 8px; font-size: 22px; color: var(--azul); }
-.guia-pdf__caixa ol { margin: 12px 0; padding-left: 22px; display: grid; gap: 8px; }
-.guia-pdf__dica { font-size: 13px; color: var(--texto-suave); }
-.guia-pdf__fechar { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--texto-suave); cursor: pointer; }
-.guia-pdf__fechar:hover { background: var(--gelo, #f2f2f2); }
-.guia-pdf__acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+@media print {
+  @page { size: A4 portrait; margin: 8mm; }
+  html, body { background: #fff !important; }
+  .tabela-pagina { position: static !important; display: block !important; background: #fff !important; color: #000; }
+  .tabela-pagina__topo, .simulador__aviso, .tabelas-split__carregando { display: none !important; }
+  .tabela-pagina__conteudo { display: block !important; overflow: hidden !important; background: #fff !important; }
+  .simulador__folha { position: relative; width: 194mm; height: 280mm; overflow: hidden; }
+  .simulador__frame {
+    /* Na impressão a barra do site do simulador já some (ele a esconde ao imprimir): sem recorte. */
+    position: absolute !important; top: 0 !important; left: 0 !important;
+    width: calc(194mm * 1.55) !important; height: calc(280mm * 1.55) !important;
+    transform: scale(0.645); transform-origin: 0 0;
+  }
+}
 
 /* Painel: ícone da aba (favicon) */
 .admin-icone { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 12px; }
