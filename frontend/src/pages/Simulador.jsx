@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../components/Icon.jsx';
 import Logo from '../components/Logo.jsx';
+import PlanoModal from './PlanoModal.jsx';
 import { useDados } from '../context/DadosContext.jsx';
 import { tituloDaAba } from '../utils/tituloAba.js';
 import { sanitizarUrl } from '../utils/urls.js';
@@ -15,6 +16,7 @@ export default function Simulador() {
   const url = link?.valida ? link.url : null;
   // Trocar a chave recarrega o quadro: volta ao início do simulador se o corretor navegar lá dentro.
   const [versao, setVersao] = useState(0);
+  const [planoAberto, setPlanoAberto] = useState(false);
 
   useEffect(() => {
     document.title = tituloDaAba(site, 'Simulador');
@@ -43,13 +45,10 @@ export default function Simulador() {
             <Icon name="external" size={17} />
           </a>
         )}
-        {url && (
-          // Imprime a página do Audaz: o simulador sai com o layout de impressão dele e o que já foi
-          // digitado, reduzido para caber numa folha A4 (o CSS de impressão cuida do encaixe).
-          <button type="button" className="visor__botao" onClick={() => window.print()}>
-            <Icon name="download" size={17} /> <span className="tabela-pagina__rotulo">Gerar PDF</span>
-          </button>
-        )}
+        {/* Gera o plano de pagamento resumido a partir do código do simulador (botão "Código"). */}
+        <button type="button" className="visor__botao" onClick={() => setPlanoAberto(true)}>
+          <Icon name="download" size={17} /> <span className="tabela-pagina__rotulo">Gerar plano</span>
+        </button>
       </header>
 
       <div className="tabela-pagina__conteudo">
@@ -75,8 +74,9 @@ export default function Simulador() {
         )}
       </div>
       <p className="simulador__aviso">
-        <Icon name="info" size={14} /> Simulador por Corretor Desenrolado (Emanuel Santiago) · para a proposta caber em 1 página, ligue o “Modo Resumido Impressão” antes de gerar o PDF.
+        <Icon name="info" size={14} /> Simulador por Corretor Desenrolado (Emanuel Santiago) · copie o “Código” da simulação e clique em “Gerar plano” para baixar o resumo em PDF.
       </p>
+      <PlanoModal aberto={planoAberto} aoFechar={() => setPlanoAberto(false)} />
     </div>
   );
 }
