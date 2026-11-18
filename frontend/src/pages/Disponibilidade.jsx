@@ -1,42 +1,46 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listarEmpreendimentosBV, obterDisponibilidade } from '../services/api.js';
+import Icon from '../components/Icon.jsx';
 import { normalizar } from '../utils/format.js';
+import { agruparEspelho, numeroCurto, termosDeBusca, unidadeCombina } from '../utils/disponibilidade.js';
 
 const formatarReais = (n) =>
   typeof n === 'number'
     ? n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     : '—';
 
-// Definição das colunas. `larg` = largura inicial (px); `align` = alinhamento.
+// Definição das colunas. `larg` = largura inicial (px); `align` = alinhamento; `campo` = valor bruto
+// (para ordenar e para ocultar a coluna quando nenhuma unidade tem valor nela).
 const COLUNAS = [
-  { key: 'unidade', label: 'Unidade', larg: 110, get: (u) => u.identificador },
-  { key: 'bloco', label: 'Bloco', larg: 90, get: (u) => u.bloco || '—' },
-  { key: 'andar', label: 'Andar', larg: 70, align: 'center', get: (u) => u.andar ?? '—' },
-  { key: 'tipo', label: 'Tipo', larg: 130, get: (u) => u.tipo || '—' },
-  { key: 'planta', label: 'Planta', larg: 120, get: (u) => u.tipo_planta || '—' },
-  { key: 'area', label: 'Área (m²)', larg: 95, align: 'right', get: (u) => u.area_privativa ?? '—' },
-  { key: 'qtos', label: 'Qtos', larg: 60, align: 'center', get: (u) => u.num_quartos ?? '—' },
-  { key: 'suites', label: 'Suítes', larg: 70, align: 'center', get: (u) => u.num_suites ?? '—' },
-  { key: 'vagas', label: 'Vagas', larg: 70, align: 'center', get: (u) => u.vagas ?? '—' },
-  { key: 'status', label: 'Status', larg: 160, get: (u) => <Selo status={u.categoria_status} texto={u.status} /> },
-  { key: 'final', label: 'Valor final', larg: 120, align: 'right', get: (u) => formatarReais(u.valor_final_kit) },
-  { key: 'aval', label: 'Aval. banco', larg: 120, align: 'right', get: (u) => formatarReais(u.valor_aval_bancaria) },
-  { key: 'volta', label: 'Volta ao Caixa', larg: 130, align: 'right', get: (u) => formatarReais(u.folga_volta_caixa) },
-  { key: 'ba', label: 'Desconto (BA)', larg: 130, align: 'right', get: (u) => formatarReais(u.ba_unidade) },
+  { key: 'unidade', label: 'Unidade', larg: 110, campo: 'identificador', sempre: true, get: (u) => u.identificador },
+  { key: 'bloco', label: 'Bloco', larg: 90, campo: 'bloco', get: (u) => u.bloco || '—' },
+  { key: 'andar', label: 'Andar', larg: 82, align: 'center', campo: 'andar', get: (u) => u.andar ?? '—' },
+  { key: 'tipo', label: 'Tipo', larg: 130, campo: 'tipo', get: (u) => u.tipo || '—' },
+  { key: 'planta', label: 'Planta', larg: 150, campo: 'tipo_planta', get: (u) => u.tipo_planta || '—' },
+  { key: 'area', label: 'Área (m²)', larg: 110, align: 'right', campo: 'area_privativa', get: (u) => u.area_privativa ?? '—' },
+  { key: 'qtos', label: 'Qtos', larg: 76, align: 'center', campo: 'num_quartos', get: (u) => u.num_quartos ?? '—' },
+  { key: 'suites', label: 'Suítes', larg: 70, align: 'center', campo: 'num_suites', get: (u) => u.num_suites ?? '—' },
+  { key: 'vagas', label: 'Vagas', larg: 70, align: 'center', campo: 'vagas', get: (u) => u.vagas ?? '—' },
+  { key: 'status', label: 'Status', larg: 150, sempre: true, get: (u) => <Selo status={u.categoria_status} texto={u.status} /> },
+  { key: 'final', label: 'Valor final', larg: 130, align: 'right', campo: 'valor_final_kit', get: (u) => formatarReais(u.valor_final_kit) },
+  { key: 'aval', label: 'Aval. banco', larg: 130, align: 'right', campo: 'valor_aval_bancaria', get: (u) => formatarReais(u.valor_aval_bancaria) },
+  { key: 'volta', label: 'Volta ao Caixa', larg: 130, align: 'right', campo: 'folga_volta_caixa', get: (u) => formatarReais(u.folga_volta_caixa) },
+  { key: 'ba', label: 'Desconto (BA)', larg: 130, align: 'right', campo: 'ba_unidade', get: (u) => formatarReais(u.ba_unidade) },
 ];
 const LARGURA_MINIMA = 50;
-const CHAVE_LARGURAS = 'audaz-disp-larguras-v1';
+const CHAVE_LARGURAS = 'audaz-disp-larguras-v2';
+const CHAVE_VISAO = 'audaz-disp-visao';
 
 // Categorias de status (vindas do backend em u.categoria_status) com rótulo e cor.
-// Usadas no filtro de status: marque quais quer ver; nenhum marcado = todos.
+// Usadas nos cartões-filtro, no selo da tabela e nas cores do espelho.
 const STATUS_INFO = {
-  disponivel: { rotulo: 'Disponível', cor: '#1f9d55' },
-  reservada: { rotulo: 'Reservada', cor: '#b7791f' },
-  vendida: { rotulo: 'Vendida', cor: '#c0392b' },
-  quitada: { rotulo: 'Quitada', cor: '#555' },
-  bloqueada: { rotulo: 'Bloqueada', cor: '#888' },
-  outro: { rotulo: 'Outros', cor: '#888' },
+  disponivel: { rotulo: 'Disponível', plural: 'Disponíveis', cor: '#1f9d55' },
+  reservada: { rotulo: 'Reservada', plural: 'Reservadas', cor: '#c27c0e' },
+  vendida: { rotulo: 'Vendida', plural: 'Vendidas', cor: '#c0392b' },
+  quitada: { rotulo: 'Quitada', plural: 'Quitadas', cor: '#5b4bb7' },
+  bloqueada: { rotulo: 'Bloqueada', plural: 'Bloqueadas', cor: '#5b6678' },
+  outro: { rotulo: 'Outros', plural: 'Outros', cor: '#9aa3b2' },
 };
 const ORDEM_STATUS = ['disponivel', 'reservada', 'vendida', 'quitada', 'bloqueada', 'outro'];
 
@@ -74,8 +78,13 @@ export default function Disponibilidade() {
   const [disp, setDisp] = useState(null);
   const [erro, setErro] = useState(null);
   const [carregando, setCarregando] = useState(true);
-  const [soDisponiveis, setSoDisponiveis] = useState(false);
   const [statusAtivos, setStatusAtivos] = useState(() => new Set()); // vazio = todos
+  const [busca, setBusca] = useState('');
+  const [planta, setPlanta] = useState('');
+  const [visao, setVisao] = useState(() => lerPreferencia(CHAVE_VISAO, 'lista'));
+  const [aberta, setAberta] = useState(null); // unidade com os detalhes abertos
+  // Vindo da página do empreendimento: abre já mostrando só as disponíveis (guarda o id que veio pelo link).
+  const vindoDoLink = useRef(null);
 
   useEffect(() => {
     listarEmpreendimentosBV()
@@ -84,11 +93,10 @@ export default function Disponibilidade() {
       .finally(() => setCarregando(false));
   }, []);
 
-  // Vindo da página do empreendimento: já abre nele e só com as unidades disponíveis.
   useEffect(() => {
     const achado = nomeVindo && acharPorNome(empreendimentos, nomeVindo);
+    vindoDoLink.current = achado ? String(achado.id) : null;
     setSelecionado(achado ? String(achado.id) : '');
-    setSoDisponiveis(!!achado);
   }, [empreendimentos, nomeVindo]);
 
   useEffect(() => {
@@ -98,7 +106,11 @@ export default function Disponibilidade() {
     }
     setDisp(null);
     setErro(null);
-    setStatusAtivos(new Set()); // começa mostrando todos ao trocar de empreendimento
+    setBusca('');
+    setPlanta('');
+    setAberta(null);
+    setStatusAtivos(new Set(vindoDoLink.current === selecionado ? ['disponivel'] : []));
+    vindoDoLink.current = null;
     // Ao trocar de empreendimento rápido, ignora a resposta atrasada do anterior.
     let atual = true;
     obterDisponibilidade(selecionado)
@@ -107,20 +119,32 @@ export default function Disponibilidade() {
     return () => { atual = false; };
   }, [selecionado]);
 
-  // Categorias de status realmente presentes no empreendimento atual (na ordem padrão).
-  const categoriasPresentes = useMemo(() => {
+  useEffect(() => gravarPreferencia(CHAVE_VISAO, visao), [visao]);
+
+  // Quantas unidades há de cada status (na ordem padrão), para os cartões-filtro.
+  const contagem = useMemo(() => {
     if (!disp) return [];
-    const presentes = new Set(disp.unidades.map((u) => u.categoria_status));
-    return ORDEM_STATUS.filter((c) => presentes.has(c));
+    const n = {};
+    for (const u of disp.unidades) n[u.categoria_status] = (n[u.categoria_status] || 0) + 1;
+    return ORDEM_STATUS.filter((c) => n[c]).map((c) => ({ cat: c, qtd: n[c] }));
   }, [disp]);
 
-  const unidades = useMemo(() => {
+  const plantas = useMemo(() => {
     if (!disp) return [];
-    let us = soDisponiveis ? disp.unidades.filter((u) => u.disponivel) : disp.unidades;
-    // Filtro por status: nenhum marcado = mostra todos.
-    if (statusAtivos.size > 0) us = us.filter((u) => statusAtivos.has(u.categoria_status));
-    return us;
-  }, [disp, soDisponiveis, statusAtivos]);
+    return [...new Set(disp.unidades.map((u) => u.tipo_planta).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [disp]);
+
+  // Unidades que passam em todos os filtros (status, busca e planta).
+  const visiveis = useMemo(() => {
+    if (!disp) return [];
+    const termos = termosDeBusca(busca);
+    return disp.unidades.filter(
+      (u) =>
+        (statusAtivos.size === 0 || statusAtivos.has(u.categoria_status)) &&
+        (!planta || u.tipo_planta === planta) &&
+        unidadeCombina(u, termos),
+    );
+  }, [disp, statusAtivos, busca, planta]);
 
   function alternarStatus(cat) {
     setStatusAtivos((prev) => {
@@ -130,11 +154,17 @@ export default function Disponibilidade() {
       return prox;
     });
   }
-  const limparStatus = () => setStatusAtivos(new Set());
+
+  const filtrando = statusAtivos.size > 0 || busca.trim() !== '' || planta !== '';
+  const limparFiltros = () => {
+    setStatusAtivos(new Set());
+    setBusca('');
+    setPlanta('');
+  };
 
   return (
-    <main className="container" style={{ padding: '24px 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+    <main className="container disp">
+      <div className="disp__cabecalho">
         <h1>Disponibilidade</h1>
         <Link to="/" className="btn btn--ghost">← Voltar</Link>
       </div>
@@ -142,45 +172,100 @@ export default function Disponibilidade() {
       {erro && <MensagemErro erro={erro} />}
 
       {carregando ? (
-        <p>Carregando empreendimentos…</p>
+        <p className="disp__aviso">Carregando empreendimentos…</p>
       ) : (
         empreendimentos.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', margin: '16px 0' }}>
-            <BuscaEmpreendimento
-              empreendimentos={empreendimentos}
-              selecionado={selecionado}
-              onEscolher={setSelecionado}
-              textoInicial={nomeVindo}
-            />
-            <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input type="checkbox" checked={soDisponiveis} onChange={(e) => setSoDisponiveis(e.target.checked)} />
-              Só disponíveis
-            </label>
-          </div>
+          <BuscaEmpreendimento
+            empreendimentos={empreendimentos}
+            selecionado={selecionado}
+            onEscolher={setSelecionado}
+            textoInicial={nomeVindo}
+          />
         )
       )}
 
       {!carregando && !selecionado && !erro && empreendimentos.length > 0 && (
-        <p style={{ color: '#666', marginTop: 8 }}>
+        <p className="disp__aviso">
           {nomeVindo
             ? `Não encontramos “${nomeVindo}” automaticamente no sistema de disponibilidade. Pesquise e escolha acima.`
             : 'Pesquise e escolha um empreendimento para ver a disponibilidade.'}
         </p>
       )}
 
-      {selecionado && !disp && !erro && <p style={{ color: '#666', marginTop: 8 }}>Carregando disponibilidade…</p>}
-      {disp && <Resumo resumo={disp.resumo} />}
+      {selecionado && !disp && !erro && <p className="disp__aviso">Carregando disponibilidade…</p>}
+
       {disp && (
-        <FiltroStatus
-          categorias={categoriasPresentes}
-          ativos={statusAtivos}
-          onAlternar={alternarStatus}
-          onLimpar={limparStatus}
-        />
+        <>
+          <Resumo
+            resumo={disp.resumo}
+            contagem={contagem}
+            ativos={statusAtivos}
+            onAlternar={alternarStatus}
+          />
+
+          <div className="disp__barra">
+            <div className="disp__busca">
+              <Icon name="search" size={18} />
+              <input
+                type="search"
+                placeholder="Buscar unidade, bloco ou planta (ex.: bl03 401)"
+                aria-label="Buscar unidade, bloco ou planta"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </div>
+            {plantas.length > 1 && (
+              <select className="disp__planta" aria-label="Planta" value={planta} onChange={(e) => setPlanta(e.target.value)}>
+                <option value="">Todas as plantas</option>
+                {plantas.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            )}
+            <div className="disp__visao" role="group" aria-label="Visualização">
+              <button type="button" aria-pressed={visao === 'lista'} onClick={() => setVisao('lista')}>
+                <Icon name="list" size={16} /> Lista
+              </button>
+              <button type="button" aria-pressed={visao === 'espelho'} onClick={() => setVisao('espelho')}>
+                <Icon name="grid" size={16} /> Espelho
+              </button>
+            </div>
+          </div>
+
+          <p className="disp__contador">
+            Mostrando <strong>{visiveis.length}</strong> de {disp.unidades.length} unidades
+            {filtrando && (
+              <button type="button" className="disp__limpar" onClick={limparFiltros}>Limpar filtros</button>
+            )}
+          </p>
+
+          {visao === 'espelho' ? (
+            <Espelho
+              unidades={disp.unidades}
+              visiveis={visiveis}
+              aberta={aberta}
+              onAbrir={setAberta}
+            />
+          ) : (
+            <Tabela unidades={visiveis} todas={disp.unidades} />
+          )}
+        </>
       )}
-      {disp && <Tabela unidades={unidades} />}
     </main>
   );
+}
+
+function lerPreferencia(chave, padrao) {
+  try {
+    return localStorage.getItem(chave) || padrao;
+  } catch {
+    return padrao;
+  }
+}
+function gravarPreferencia(chave, valor) {
+  try {
+    localStorage.setItem(chave, valor);
+  } catch {
+    // sem armazenamento: só não lembra a preferência
+  }
 }
 
 const rotuloEmp = (e) => (e.bairro ? `${e.nome} — ${e.bairro}` : e.nome);
@@ -292,92 +377,67 @@ function BuscaEmpreendimento({ empreendimentos, selecionado, onEscolher, textoIn
   );
 }
 
-function Resumo({ resumo }) {
+// Resumo: total, um cartão por status (clique para filtrar; nenhum marcado = todos), faixa de preço
+// e uma barra com a proporção de cada status.
+function Resumo({ resumo, contagem, ativos, onAlternar }) {
   const faixa =
     resumo.preco_minimo_disponivel != null
       ? `${formatarReais(resumo.preco_minimo_disponivel)} — ${formatarReais(resumo.preco_maximo_disponivel)}`
       : '—';
+  const total = resumo.total || 1;
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, margin: '12px 0' }}>
-      <Cartao rotulo="Total de unidades" valor={resumo.total} />
-      <Cartao rotulo="Disponíveis" valor={resumo.disponiveis} destaque />
-      <Cartao rotulo="Faixa (disponíveis)" valor={faixa} />
-    </div>
+    <section className="disp-resumo" aria-label="Resumo">
+      <div className="disp-resumo__cartoes">
+        <div className="disp-cartao">
+          <span className="disp-cartao__rotulo">Total de unidades</span>
+          <strong className="disp-cartao__valor">{resumo.total}</strong>
+        </div>
+        {contagem.map(({ cat, qtd }) => {
+          const info = STATUS_INFO[cat];
+          const on = ativos.has(cat);
+          return (
+            <button
+              key={cat}
+              type="button"
+              className={`disp-cartao disp-cartao--status${on ? ' ligado' : ''}`}
+              style={{ '--cor': info.cor }}
+              aria-pressed={on}
+              title={on ? 'Clique para tirar este filtro' : `Clique para ver só: ${info.rotulo}`}
+              onClick={() => onAlternar(cat)}
+            >
+              <span className="disp-cartao__rotulo"><i className="disp-ponto" />{info.plural}</span>
+              <strong className="disp-cartao__valor">{qtd}</strong>
+              <span className="disp-cartao__pct">{Math.round((qtd / total) * 100)}%</span>
+            </button>
+          );
+        })}
+        <div className="disp-cartao disp-cartao--faixa">
+          <span className="disp-cartao__rotulo">Faixa de valor (disponíveis)</span>
+          <strong className="disp-cartao__valor">{faixa}</strong>
+        </div>
+      </div>
+      <div className="disp-resumo__barra" aria-hidden="true">
+        {contagem.map(({ cat, qtd }) => (
+          <span key={cat} style={{ flexGrow: qtd, background: STATUS_INFO[cat].cor }} />
+        ))}
+      </div>
+    </section>
   );
 }
 
-function Cartao({ rotulo, valor, destaque }) {
-  return (
-    <div
-      style={{
-        border: '1px solid var(--borda, #e2e2e2)',
-        borderRadius: 12,
-        padding: '12px 16px',
-        minWidth: 160,
-        background: destaque ? '#e9f8ef' : '#fff',
-      }}
-    >
-      <div style={{ fontSize: 13, color: '#666' }}>{rotulo}</div>
-      <div style={{ fontSize: 20, fontWeight: 700 }}>{valor}</div>
-    </div>
-  );
-}
+// Valor bruto de uma coluna, para ordenar e para saber se a coluna está vazia.
+const valorBruto = (c, u) => (c.key === 'status' ? ORDEM_STATUS.indexOf(u.categoria_status) : u[c.campo]);
+const vazio = (v) => v == null || v === '' || v === 0;
+const comparar = (a, b) => {
+  if (a == null) return 1;
+  if (b == null) return -1;
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  return String(a).localeCompare(String(b), 'pt-BR', { numeric: true });
+};
 
-// Filtro por status: um botão por categoria presente. Marque os que quer ver;
-// clicar alterna. Com nenhum marcado, a tabela mostra todas as unidades.
-function FiltroStatus({ categorias, ativos, onAlternar, onLimpar }) {
-  if (categorias.length <= 1) return null; // nada a filtrar se só há um status
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', margin: '4px 0 14px' }}>
-      <span style={{ fontSize: 13, color: '#666', fontWeight: 600 }}>Mostrar:</span>
-      {categorias.map((cat) => {
-        const info = STATUS_INFO[cat] || { rotulo: cat, cor: '#888' };
-        const on = ativos.has(cat);
-        return (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => onAlternar(cat)}
-            aria-pressed={on}
-            title={on ? 'Clique para ocultar' : 'Clique para mostrar só este'}
-            style={{
-              cursor: 'pointer',
-              padding: '4px 12px',
-              borderRadius: 999,
-              fontSize: 13,
-              fontWeight: 600,
-              border: `1.5px solid ${info.cor}`,
-              background: on ? info.cor : 'transparent',
-              color: on ? '#fff' : info.cor,
-              transition: 'background .12s, color .12s',
-            }}
-          >
-            {info.rotulo}
-          </button>
-        );
-      })}
-      {ativos.size > 0 && (
-        <button
-          type="button"
-          onClick={onLimpar}
-          style={{
-            cursor: 'pointer', padding: '4px 10px', borderRadius: 999, fontSize: 13,
-            border: '1px solid #ccc', background: 'transparent', color: '#666',
-          }}
-        >
-          Limpar
-        </button>
-      )}
-      <span style={{ fontSize: 12, color: '#999' }}>
-        {ativos.size === 0 ? '(nenhum marcado = todos)' : null}
-      </span>
-    </div>
-  );
-}
-
-// Tabela com colunas redimensionáveis: arraste a borda direita de cada cabeçalho.
-// As larguras ficam salvas no navegador.
-function Tabela({ unidades }) {
+// Tabela com colunas redimensionáveis (arraste a borda do cabeçalho; larguras ficam salvas no navegador)
+// e ordenáveis (clique no nome da coluna). Colunas sem nenhum valor no empreendimento ficam ocultas.
+function Tabela({ unidades, todas }) {
   const [larguras, setLarguras] = useState(() => {
     try {
       const salvo = JSON.parse(localStorage.getItem(CHAVE_LARGURAS));
@@ -387,6 +447,7 @@ function Tabela({ unidades }) {
     }
     return COLUNAS.map((c) => c.larg);
   });
+  const [ordem, setOrdem] = useState(null); // { key, dir: 1 | -1 }
   const arraste = useRef(null);
   const [sobre, setSobre] = useState(null); // índice da alça sob o mouse (realce)
 
@@ -398,8 +459,30 @@ function Tabela({ unidades }) {
     }
   }, [larguras]);
 
+  // Índices (em COLUNAS) das colunas que têm algum valor neste empreendimento.
+  const colunas = useMemo(
+    () => COLUNAS.map((c, i) => i).filter((i) => COLUNAS[i].sempre || todas.some((u) => !vazio(valorBruto(COLUNAS[i], u)))),
+    [todas],
+  );
+
+  const ordenadas = useMemo(() => {
+    if (!ordem) return unidades;
+    const c = COLUNAS.find((x) => x.key === ordem.key);
+    return [...unidades].sort((a, b) => {
+      const va = valorBruto(c, a);
+      const vb = valorBruto(c, b);
+      if (va == null || vb == null) return comparar(va, vb); // vazios sempre no fim
+      return comparar(va, vb) * ordem.dir;
+    });
+  }, [unidades, ordem]);
+
+  function ordenarPor(key) {
+    setOrdem((o) => (!o || o.key !== key ? { key, dir: 1 } : o.dir === 1 ? { key, dir: -1 } : null));
+  }
+
   function iniciarArraste(indice, evento) {
     evento.preventDefault();
+    evento.stopPropagation();
     arraste.current = { indice, xInicial: evento.clientX, larguraInicial: larguras[indice] };
     const mover = (ev) => {
       const a = arraste.current;
@@ -418,41 +501,56 @@ function Tabela({ unidades }) {
     window.addEventListener('mouseup', soltar);
   }
 
-  if (unidades.length === 0) return <p>Nenhuma unidade para mostrar.</p>;
+  if (unidades.length === 0) return <p className="disp__aviso">Nenhuma unidade com esses filtros.</p>;
 
-  const larguraTotal = larguras.reduce((a, b) => a + b, 0);
+  const larguraTotal = colunas.reduce((soma, i) => soma + larguras[i], 0);
 
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed', width: larguraTotal, fontSize: 14 }}>
+    <div className="disp-tabela">
+      <table style={{ width: larguraTotal }}>
         <colgroup>
-          {COLUNAS.map((c, i) => <col key={c.key} style={{ width: larguras[i] }} />)}
+          {colunas.map((i) => <col key={COLUNAS[i].key} style={{ width: larguras[i] }} />)}
         </colgroup>
         <thead>
           <tr>
-            {COLUNAS.map((c, i) => (
-              <th key={c.key} style={{ ...th, textAlign: c.align || 'left' }}>
-                <span style={celulaTexto}>{c.label}</span>
-                <span
-                  onMouseDown={(e) => iniciarArraste(i, e)}
-                  onDoubleClick={() => setLarguras((ls) => ls.map((w, idx) => (idx === i ? COLUNAS[i].larg : w)))}
-                  onMouseEnter={() => setSobre(i)}
-                  onMouseLeave={() => setSobre(null)}
-                  title="Arraste para ajustar a largura (duplo clique para padrão)"
-                  style={{ ...alca, borderRightColor: (sobre === i || arraste.current?.indice === i) ? '#2563eb' : '#c4c9d4' }}
-                />
-              </th>
-            ))}
+            {colunas.map((i) => {
+              const c = COLUNAS[i];
+              const dir = ordem?.key === c.key ? ordem.dir : 0;
+              return (
+                <th
+                  key={c.key}
+                  style={{ textAlign: c.align || 'left' }}
+                  aria-sort={dir === 1 ? 'ascending' : dir === -1 ? 'descending' : 'none'}
+                >
+                  <button type="button" className="disp-tabela__ordenar" onClick={() => ordenarPor(c.key)} title="Clique para ordenar">
+                    <span>{c.label}</span>
+                    <span className="disp-tabela__seta" aria-hidden="true">{dir === 1 ? '▲' : dir === -1 ? '▼' : '↕'}</span>
+                  </button>
+                  <span
+                    className={`disp-tabela__alca${sobre === i || arraste.current?.indice === i ? ' ativa' : ''}`}
+                    onMouseDown={(e) => iniciarArraste(i, e)}
+                    onDoubleClick={() => setLarguras((ls) => ls.map((w, idx) => (idx === i ? COLUNAS[i].larg : w)))}
+                    onMouseEnter={() => setSobre(i)}
+                    onMouseLeave={() => setSobre(null)}
+                    title="Arraste para ajustar a largura (duplo clique para padrão)"
+                  />
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {unidades.map((u) => (
-            <tr key={u.id} style={{ background: u.disponivel ? '#f3fbf6' : 'transparent' }}>
-              {COLUNAS.map((c) => (
-                <td key={c.key} style={{ ...td, textAlign: c.align || 'left' }}>
-                  <span style={celulaTexto} title={textoTitulo(c.get(u))}>{c.get(u)}</span>
-                </td>
-              ))}
+          {ordenadas.map((u) => (
+            <tr key={u.id} className={u.disponivel ? 'disponivel' : ''}>
+              {colunas.map((i) => {
+                const c = COLUNAS[i];
+                const v = c.get(u);
+                return (
+                  <td key={c.key} style={{ textAlign: c.align || 'left' }}>
+                    <span className="disp-tabela__celula" title={textoTitulo(v)}>{v}</span>
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
@@ -466,10 +564,105 @@ function textoTitulo(valor) {
   return typeof valor === 'string' || typeof valor === 'number' ? String(valor) : undefined;
 }
 
-function Selo({ status, texto }) {
-  const cor = { disponivel: '#1f9d55', reservada: '#b7791f', vendida: '#c0392b', quitada: '#555', bloqueada: '#888' }[status] || '#888';
+// Espelho de vendas: cada bloco com seus andares (do mais alto ao térreo) e as unidades coloridas
+// pelo status. Unidades fora dos filtros ficam apagadas; blocos sem nenhuma somem.
+// Clique numa unidade para ver os detalhes.
+function Espelho({ unidades, visiveis, aberta, onAbrir }) {
+  const grupos = useMemo(() => agruparEspelho(unidades), [unidades]);
+  const mostrar = useMemo(() => new Set(visiveis.map((u) => u.id)), [visiveis]);
+
+  useEffect(() => {
+    if (!aberta) return undefined;
+    const fechar = (e) => e.key === 'Escape' && onAbrir(null);
+    window.addEventListener('keydown', fechar);
+    return () => window.removeEventListener('keydown', fechar);
+  }, [aberta, onAbrir]);
+
+  const blocos = grupos.filter((g) => g.andares.some((a) => a.unidades.some((u) => mostrar.has(u.id))));
+  if (blocos.length === 0) return <p className="disp__aviso">Nenhuma unidade com esses filtros.</p>;
+
   return (
-    <span style={{ color: cor, fontWeight: 600 }} title={texto}>
+    <>
+      <div className="espelho">
+        {blocos.map((g) => {
+          const livres = g.andares.reduce((n, a) => n + a.unidades.filter((u) => u.disponivel).length, 0);
+          return (
+            <section key={g.bloco} className="espelho__bloco">
+              <header className="espelho__topo">
+                <h3>{g.bloco}</h3>
+                <span>{livres} {livres === 1 ? 'disponível' : 'disponíveis'}</span>
+              </header>
+              {g.andares.map((a) => (
+                <div key={a.andar} className="espelho__andar">
+                  <span className="espelho__num-andar">{typeof a.andar === 'number' ? `${a.andar}º` : a.andar}</span>
+                  <div className="espelho__unidades">
+                    {a.unidades.map((u) => (
+                      <button
+                        key={u.id}
+                        type="button"
+                        className={`unid unid--${u.categoria_status}${mostrar.has(u.id) ? '' : ' unid--fora'}${aberta?.id === u.id ? ' unid--aberta' : ''}`}
+                        title={`${u.identificador} · ${u.status}${u.tipo_planta ? ` · ${u.tipo_planta}` : ''}`}
+                        onClick={() => onAbrir(aberta?.id === u.id ? null : u)}
+                      >
+                        {numeroCurto(u.identificador)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </section>
+          );
+        })}
+      </div>
+      {aberta && <DetalhesUnidade u={aberta} onFechar={() => onAbrir(null)} />}
+    </>
+  );
+}
+
+function DetalhesUnidade({ u, onFechar }) {
+  const info = STATUS_INFO[u.categoria_status] || STATUS_INFO.outro;
+  const linhas = [
+    ['Bloco', u.bloco],
+    ['Andar', u.andar],
+    ['Tipo', u.tipo],
+    ['Planta', u.tipo_planta],
+    ['Área privativa', u.area_privativa != null ? `${u.area_privativa} m²` : null],
+    ['Quartos', u.num_quartos],
+    ['Suítes', u.num_suites || null],
+    ['Vagas', u.vagas || null],
+    ['Valor final', u.valor_final_kit != null ? formatarReais(u.valor_final_kit) : null],
+    ['Avaliação do banco', u.valor_aval_bancaria != null ? formatarReais(u.valor_aval_bancaria) : null],
+    ['Volta ao Caixa', u.folga_volta_caixa != null ? formatarReais(u.folga_volta_caixa) : null],
+    ['Desconto (BA)', u.ba_unidade != null ? formatarReais(u.ba_unidade) : null],
+  ].filter(([, v]) => v != null && v !== '');
+  return (
+    <aside className="unid-detalhe" aria-label={`Unidade ${u.identificador}`}>
+      <header>
+        <div>
+          <h3>{u.identificador}</h3>
+          <Selo status={u.categoria_status} texto={u.status} />
+        </div>
+        <button type="button" className="unid-detalhe__fechar" onClick={onFechar} aria-label="Fechar">
+          <Icon name="close" size={18} />
+        </button>
+      </header>
+      <dl>
+        {linhas.map(([rotulo, valor]) => (
+          <div key={rotulo}>
+            <dt>{rotulo}</dt>
+            <dd>{valor}</dd>
+          </div>
+        ))}
+      </dl>
+      <span className="unid-detalhe__faixa" style={{ background: info.cor }} />
+    </aside>
+  );
+}
+
+function Selo({ status, texto }) {
+  const cor = (STATUS_INFO[status] || STATUS_INFO.outro).cor;
+  return (
+    <span className="disp-selo" style={{ '--cor': cor }} title={texto}>
       {texto}
     </span>
   );
@@ -485,25 +678,3 @@ function MensagemErro({ erro }) {
     </p>
   );
 }
-
-const th = {
-  position: 'relative',
-  borderBottom: '2px solid #ddd',
-  padding: '8px 10px',
-  background: '#fff',
-};
-const td = { borderBottom: '1px solid #eee', padding: '8px 10px' };
-// texto numa linha só; o que passar da largura vira reticências.
-const celulaTexto = { display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' };
-// alça de redimensionamento na borda direita do cabeçalho.
-const alca = {
-  position: 'absolute',
-  top: 0,
-  right: 0,
-  width: 8,
-  height: '100%',
-  cursor: 'col-resize',
-  userSelect: 'none',
-  // traço cinza na borda (azul no hover) — sinaliza que dá para redimensionar
-  borderRight: '2px solid #c4c9d4',
-};
