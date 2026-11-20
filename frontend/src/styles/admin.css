@@ -315,6 +315,15 @@ button.material__link { width: 100%; border: 0; font: inherit; text-align: left;
 .tabela-pagina__titulo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .tabela-pagina__titulo strong { font-family: var(--fonte-titulo); font-size: 16px; }
 .tabela-pagina__titulo span { font-size: 12px; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Botões Direcional / Riva (uma tabela de valores por construtora) */
+.tabela-fontes { display: inline-flex; flex-shrink: 0; padding: 3px; gap: 2px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); }
+.tabela-fontes__item {
+  min-height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent;
+  color: rgba(255, 255, 255, 0.8); font: 600 14px/1 var(--fonte-texto); cursor: pointer; transition: background var(--transicao), color var(--transicao);
+}
+.tabela-fontes__item:hover { color: #fff; background: rgba(255, 255, 255, 0.12); }
+.tabela-fontes__item.ativo { background: #fff; color: var(--azul); }
+@media (max-width: 640px) { .tabela-fontes__item { padding: 0 12px; } }
 @media (max-width: 640px) { .tabela-pagina__topo .logo { display: none; } .tabela-pagina__rotulo { display: none; } .tabela-pagina__topo .visor__botao { padding: 0 11px; } }
 .tabela-pagina__conteudo { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; background: #fff; }
 .tabela-pagina__conteudo .visor__aviso { color: var(--texto); }

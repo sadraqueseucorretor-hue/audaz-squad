@@ -7,33 +7,45 @@ import { useDados } from '../context/DadosContext.jsx';
 import { tituloDaAba } from '../utils/tituloAba.js';
 import { analisarUrlMaterial } from '../utils/materiais.js';
 import { carregarMenuPlanilha, listarAbasPlanilha, urlAbaPlanilha } from '../utils/planilha.js';
+import { escolherFonte, fontesCadastradas } from '../utils/tabelas.js';
 
 // Aba "Tabela de valores": a planilha (Google Sheets) cadastrada no admin, em tela cheia,
 // com um menu próprio das abas da planilha (os links internos dela não funcionam embutidos).
+// Com mais de uma tabela cadastrada (Direcional, Riva), um botão para cada uma (?fonte=riva).
 export default function TabelaValores() {
   const navigate = useNavigate();
   const { site, siteCarregado } = useDados();
-  const analise = site.tabelaValoresUrl ? analisarUrlMaterial(site.tabelaValoresUrl) : null;
+  const [params, setParams] = useSearchParams();
+  const fontes = fontesCadastradas(site);
+  const fonte = escolherFonte(site, params.get('fonte'));
+  const urlTabela = fonte ? site[fonte.campo] : '';
+  const analise = urlTabela ? analisarUrlMaterial(urlTabela) : null;
   const planilha = analise?.valido && analise.drive?.tipo === 'planilha' ? analise.drive : null;
   // Link de pasta: mostra a galeria com todas as tabelas (PDFs) da pasta.
   const pasta = analise?.valido && analise.drive?.tipo === 'pasta' ? analise.drive : null;
   const gidInicial = planilha?.urlPreview.match(/gid=(\d+)/)?.[1] || '';
 
-  const [params, setParams] = useSearchParams();
-  const [abas, setAbas] = useState([]);
+  // Abas e menu ficam guardados junto com a planilha de onde vieram: ao trocar de tabela
+  // (Direcional ↔ Riva) não aparecem as abas da anterior.
+  const chave = planilha ? `${fonte.chave}:${planilha.id}` : '';
+  const [abasDe, setAbasDe] = useState({ chave: '', lista: [] });
+  const abas = abasDe.chave === chave ? abasDe.lista : [];
   const [carregou, setCarregou] = useState(false);
-  const [menu, setMenu] = useState(null);
+  const [menuDe, setMenuDe] = useState({ chave: '', menu: null });
   const abaAtual = params.get('aba') || gidInicial || abas[0]?.gid || '';
   // Aba de menu da planilha: a chamada "MENU" (ou a do link cadastrado / a primeira).
   const menuGid = abas.find((a) => /^menu$/i.test(a.nome))?.gid || gidInicial || abas[0]?.gid || '';
+  const menu = menuDe.chave === `${chave}:${menuGid}` ? menuDe.menu : null;
 
   useEffect(() => {
     let ativo = true;
-    if (planilha && menuGid) carregarMenuPlanilha(planilha.id, menuGid).then((m) => ativo && setMenu(m));
+    if (planilha && menuGid) {
+      carregarMenuPlanilha(planilha.id, menuGid).then((m) => ativo && setMenuDe({ chave: `${chave}:${menuGid}`, menu: m }));
+    }
     return () => {
       ativo = false;
     };
-  }, [planilha?.id, menuGid]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chave, menuGid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Mantém o empreendimento escolhido visível na barra de abas (ela rola na horizontal).
   useEffect(() => {
@@ -49,15 +61,22 @@ export default function TabelaValores() {
 
   useEffect(() => {
     let ativo = true;
-    if (planilha) listarAbasPlanilha(planilha.id).then((lista) => ativo && setAbas(lista));
+    if (planilha) listarAbasPlanilha(planilha.id).then((lista) => ativo && setAbasDe({ chave, lista }));
     return () => {
       ativo = false;
     };
-  }, [planilha?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chave]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Mantém a tabela escolhida (?fonte=) ao trocar de aba.
+  const comFonte = (extra = {}) => ({ ...(params.get('fonte') ? { fonte: params.get('fonte') } : {}), ...extra });
   const escolherAba = (gid) => {
     setCarregou(false);
-    setParams(gid ? { aba: gid } : {}, { replace: true });
+    setParams(comFonte(gid ? { aba: gid } : {}), { replace: true });
+  };
+  const escolherFonteTabela = (chaveFonte) => {
+    if (chaveFonte === fonte?.chave) return;
+    setCarregou(false);
+    setParams({ fonte: chaveFonte }, { replace: true });
   };
 
   const voltar = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/'));
@@ -73,8 +92,23 @@ export default function TabelaValores() {
         <Logo compacto />
         <div className="tabela-pagina__titulo">
           <strong>Tabela de valores</strong>
-          <span>{abas.find((a) => a.gid === abaAtual)?.nome || site.marca}</span>
+          <span>{abas.find((a) => a.gid === abaAtual)?.nome || fonte?.rotulo || site.marca}</span>
         </div>
+        {fontes.length > 1 && (
+          <div className="tabela-fontes" role="group" aria-label="Construtora">
+            {fontes.map((f) => (
+              <button
+                key={f.chave}
+                type="button"
+                className={`tabela-fontes__item ${f.chave === fonte?.chave ? 'ativo' : ''}`}
+                aria-pressed={f.chave === fonte?.chave}
+                onClick={() => escolherFonteTabela(f.chave)}
+              >
+                {f.rotulo}
+              </button>
+            ))}
+          </div>
+        )}
         {analise?.valido && !pasta && (
           <a className="visor__botao" href={analise.urlOriginal} target="_blank" rel="noopener noreferrer">
             <Icon name="external" size={17} /> <span className="tabela-pagina__rotulo">Abrir planilha original</span>
@@ -100,7 +134,7 @@ export default function TabelaValores() {
 
       <div className="tabela-pagina__conteudo">
         {!siteCarregado ? null : pasta ? (
-          <GaleriaTabelas pastaId={pasta.id} urlPasta={analise.urlOriginal} />
+          <GaleriaTabelas key={pasta.id} pastaId={pasta.id} urlPasta={analise.urlOriginal} />
         ) : mostrarMenu ? (
           <MenuTabela menu={menu} onEscolher={escolherAba} />
         ) : embutivel ? (

@@ -45,7 +45,12 @@ export default function GaleriaTabelas({ pastaId, urlPasta }) {
 
   const escolher = (id) => {
     if (id === selecionado?.id) return;
-    setParams({ tabela: id }, { replace: true });
+    // Mantém os outros parâmetros (ex.: ?fonte=riva) ao trocar de tabela.
+    setParams((p) => {
+      const prox = new URLSearchParams(p);
+      prox.set('tabela', id);
+      return prox;
+    }, { replace: true });
   };
 
   return (
