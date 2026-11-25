@@ -31,7 +31,13 @@ function calcular(o) {
   const subs = (d.subsidioFederalValor || 0) + (d.subsidioEstadualValor || 0) + (d.fgtsValor || 0);
   const entrada = imovel - (d.financiamentoValor || 0) - subs;
   const sinalComTotal = (d.sinalComQuantidade || 0) * (d.sinalComValor || 0);
-  const restante = entrada - (d.sinalAtoValor || 0) - sinalComTotal;
+  // Sinais parcelados (ATO + Sinal 1/2/3). Entram na entrada e abatem o restante.
+  const sinaisParcelados = [];
+  if (d.sinal1Valor > 0) sinaisParcelados.push(['Sinal 1', d.sinal1Valor, parseData(d.sinal1Info)]);
+  if (d.sinal2Valor > 0) sinaisParcelados.push(['Sinal 2', d.sinal2Valor, parseData(d.sinal2Info)]);
+  if (d.sinal3Valor > 0) sinaisParcelados.push(['Sinal 3', d.sinal3Valor, parseData(d.sinal3Info)]);
+  const sinaisExtra = sinaisParcelados.reduce((s, [, v]) => s + v, 0);
+  const restante = entrada - (d.sinalAtoValor || 0) - sinaisExtra - sinalComTotal;
   const qtd = d.quantidadeParcelasValor || 0;
   const mensal = qtd ? +(restante / qtd).toFixed(2) : 0;
   const pctFin = d.valorUnidade ? (d.financiamentoValor / d.valorUnidade) * 100 : 0;
@@ -53,7 +59,7 @@ function calcular(o) {
   const atoData = parseData((di.sinais && di.sinais[0] && di.sinais[0].data) || d.sinalAtoInfo);
 
   return {
-    d, di, desc, imovel, subs, entrada, sinalComTotal, restante, qtd, mensal, totalParc: mensal * qtd, pctFin,
+    d, di, desc, imovel, subs, entrada, sinalComTotal, restante, qtd, mensal, totalParc: mensal * qtd, pctFin, sinaisParcelados,
     liq, ato, pre, baloes, pos, qtdPre, parcPre, qtdPos, parcPos, dtIniPre, dtIniPos, atoData,
     dtEntrega, dtSinalCom, dtAto: parseData(d.sinalAtoInfo), dtSinalComUlt: addMeses(dtSinalCom, (d.sinalComQuantidade || 1) - 1), dtMensal: parseData(d.valorParcelaInfo),
   };
@@ -89,6 +95,7 @@ function bodyAssociativo(c, d) {
     <h3 class="pp-sectit">Como fica a entrada</h3>
     <div class="pp-linhas">
       ${linha('Sinal / Ato', `em ${fmt(c.dtAto)}`, brl(d.sinalAtoValor), '')}
+      ${c.sinaisParcelados.map(([nome, valor, data]) => linha(nome, data ? `em ${fmt(data)}` : '', brl(valor), '')).join('')}
       ${sinalCom}
       ${linha('Mensais', `1ª parcela em ${fmt(c.dtMensal)} · total ${brl(c.totalParc)}`, `${c.qtd}× ${brl(c.mensal)}`, '')}
     </div>
