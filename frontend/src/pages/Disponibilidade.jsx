@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { listarEmpreendimentosBV, obterDisponibilidade } from '../services/api.js';
 import Icon from '../components/Icon.jsx';
+import { useDados } from '../context/DadosContext.jsx';
+import { tituloDaAba } from '../utils/tituloAba.js';
 import { normalizar } from '../utils/format.js';
 import { agruparEspelho, numeroCurto, termosDeBusca, unidadeCombina } from '../utils/disponibilidade.js';
 
@@ -71,6 +73,7 @@ function acharPorNome(lista, nome) {
 }
 
 export default function Disponibilidade() {
+  const { site } = useDados();
   const [params] = useSearchParams();
   const nomeVindo = params.get('emp') || '';
   const [empreendimentos, setEmpreendimentos] = useState([]);
@@ -120,6 +123,10 @@ export default function Disponibilidade() {
   }, [selecionado]);
 
   useEffect(() => gravarPreferencia(CHAVE_VISAO, visao), [visao]);
+
+  useEffect(() => {
+    document.title = tituloDaAba(site, 'Disponibilidade');
+  }, [site]);
 
   // Quantas unidades há de cada status (na ordem padrão), para os cartões-filtro.
   const contagem = useMemo(() => {

@@ -12,6 +12,7 @@ import { analisarLinkDrive, urlImagem } from '../utils/drive.js';
 import useAcessoDrive from '../utils/useAcessoDrive.js';
 import { tituloDaAba } from '../utils/tituloAba.js';
 import { nomeConstrutora } from '../utils/format.js';
+import { fontesCadastradas } from '../utils/tabelas.js';
 
 const VISTA_CHAVE = 'audaz-vista-lista';
 
@@ -216,7 +217,7 @@ export default function Home() {
             <Link to="/disponibilidade" className="inicio-nav__tabela inicio-nav__simulador" aria-label="Disponibilidade">
               <Icon name="layers" size={18} /> <span className="inicio-nav__rotulo">Disponibilidade</span>
             </Link>
-            {SITE.tabelaValoresUrl && (
+            {fontesCadastradas(SITE).length > 0 && (
               <Link to="/tabela-valores" className="inicio-nav__tabela">
                 <Icon name="table" size={18} /> Tabela de valores
               </Link>
